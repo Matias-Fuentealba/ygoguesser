@@ -56,6 +56,10 @@ COMMANDS = [
             }
         ],
     },
+    {
+        "name": "zoom-pista",
+        "description": "Avanza al siguiente nivel de zoom (reduce el puntaje posible).",
+    },
 ]
 
 url = f"https://discord.com/api/v10/applications/{APPLICATION_ID}/commands"

@@ -95,6 +95,8 @@ async def process_command(payload: dict, token: str):
         options = payload["data"].get("options", [])
         guess = options[0]["value"] if options else ""
         response = await gm.guess_zoom(user_id, username, guess)
+    elif command == "zoom-pista":
+        response = await gm.next_zoom(user_id)
     else:
         response = "Comando no reconocido."
 

@@ -216,6 +216,30 @@ class GameManager:
             "image": img,
         }
 
+    async def next_zoom(self, user_id: str) -> dict:
+        game = self.db.get_active_game(user_id)
+        if not game or game.get("game_mode") != "zoom":
+            return {"content": "No tienes una partida de zoom activa. Usa `/zoom` para empezar."}
+
+        zoom_level = game["zoom_level"]
+        next_level = zoom_level + 1
+
+        if next_level > MAX_ZOOM_LEVEL:
+            return {"content": f"Ya estás en el nivel máximo de zoom ({zoom_level + 1}/{MAX_ZOOM_LEVEL + 1}). Usa `/adivinar-zoom` o `/rendirse`."}
+
+        card = game["card_data"]
+        self.db.advance_zoom(game["id"], next_level)
+        img = get_zoomed_image(card["image_url"], next_level)
+        score = zoom_score(next_level)
+
+        return {
+            "content": (
+                f"🔍 Zoom nivel {next_level + 1}/{MAX_ZOOM_LEVEL + 1} — "
+                f"Acertar ahora vale **{score} puntos**."
+            ),
+            "image": img,
+        }
+
     async def get_ranking(self) -> str:
         rows = self.db.get_ranking()
         if not rows:
