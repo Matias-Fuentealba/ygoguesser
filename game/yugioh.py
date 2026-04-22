@@ -65,11 +65,11 @@ def _atk_label(atk) -> str:
     if val >= 3000:
         return "muy alto (3000+)"
     if val >= 2500:
-        return "alto (2500–2999)"
+        return "alto (2500+)"
     if val >= 2000:
-        return "medio-alto (2000–2499)"
+        return "medio-alto (2000+)"
     if val >= 1500:
-        return "medio (1500–1999)"
+        return "medio (1500+)"
     return "bajo (menos de 1500)"
 
 
@@ -86,24 +86,6 @@ def _level_label(card: dict) -> str:
     label = "bajo" if val <= 4 else "medio" if val <= 6 else "alto" if val <= 8 else "muy alto"
     return f"Nivel {label} ({val}★)"
 
-
-def _mechanic_label(desc: str) -> str:
-    d = desc.lower()
-    if "negate" in d:
-        return "negación de efectos"
-    if "special summon" in d:
-        return "invocación especial"
-    if "destroy" in d:
-        return "destrucción"
-    if "draw" in d:
-        return "robo de cartas"
-    if "search" in d or ("add" in d and "hand" in d):
-        return "búsqueda de cartas"
-    if "banish" in d or "remove" in d:
-        return "destierro (banish)"
-    if "attack" in d and "direct" in d:
-        return "ataque directo"
-    return "efecto variado"
 
 
 def build_hints(card: dict) -> list[str]:
@@ -136,12 +118,13 @@ def build_hints(card: dict) -> list[str]:
     level_label = _level_label(card)
     hint2 = f"⚙️ **{level_label}**, ATK **{atk_label}**"
 
-    # Pista 3 — Temática: arquetipo o mecánica principal
+    # Pista 3 — Temática: arquetipo o ATK/DEF exacto si no hay arquetipo
     if card["archetype"]:
         hint3 = f"🎯 Pertenece al arquetipo **{card['archetype']}**"
     else:
-        mechanic = _mechanic_label(card["desc"])
-        hint3 = f"🎯 Su mecánica principal involucra **{mechanic}**"
+        atk = card["atk"] if card["atk"] not in ("N/A", None) else "?"
+        def_ = card["def"] if card["def"] not in ("N/A", None) else "?"
+        hint3 = f"🎯 ATK exacto: **{atk}** / DEF exacto: **{def_}**"
 
     # Pista 4 — Nombre: inicial, palabras y longitud
     initial = name[0].upper()
