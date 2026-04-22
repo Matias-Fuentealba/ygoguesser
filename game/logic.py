@@ -153,7 +153,8 @@ class GameManager:
                 f"🔍 **¡Modo Zoom iniciado!**\n"
                 f"Adivina la carta con zoom nivel 1/{MAX_ZOOM_LEVEL + 1}.\n"
                 f"Acertar ahora vale **{score} puntos**. Tienes **3 intentos** por nivel.\n"
-                f"➡️ Usa `/adivinar-zoom carta:<nombre>` para intentar."
+                f"➡️ `/adivinar-zoom carta:<nombre>` para intentar.\n"
+                f"➡️ `/zoom-pista` para ver más de la imagen (baja el puntaje)."
             ),
             "image": img,
         }
