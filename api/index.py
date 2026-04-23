@@ -6,7 +6,7 @@ import httpx
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from fastapi import FastAPI, Request, HTTPException, BackgroundTasks
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, HTMLResponse
 import nacl.signing
 import nacl.encoding
 import nacl.exceptions
@@ -106,6 +106,54 @@ async def process_command(payload: dict, token: str):
 @app.get("/")
 async def health():
     return {"status": "ok"}
+
+
+@app.get("/terms", response_class=HTMLResponse)
+async def terms():
+    return """
+    <html><head><title>YGOGuesser — Terms of Service</title></head>
+    <body style="font-family:sans-serif;max-width:700px;margin:40px auto;padding:0 20px">
+    <h1>Terms of Service</h1>
+    <p><strong>Last updated:</strong> 2025</p>
+    <p>By using the YGOGuesser Discord bot you agree to these terms.</p>
+    <h2>1. Use of the Bot</h2>
+    <p>YGOGuesser is a free entertainment bot. You agree to use it only for its intended purpose and not to abuse, exploit or attempt to disrupt its functionality.</p>
+    <h2>2. Data</h2>
+    <p>We store your Discord user ID, username and game scores to provide the ranking feature. No other personal data is collected.</p>
+    <h2>3. Disclaimer</h2>
+    <p>YGOGuesser is not affiliated with Konami and does not claim any rights over the Yu-Gi-Oh! trademark. All card data is provided by <a href="https://ygoprodeck.com">YGOPRODeck</a>.</p>
+    <h2>4. Changes</h2>
+    <p>We reserve the right to modify these terms at any time. Continued use of the bot constitutes acceptance of the updated terms.</p>
+    <h2>Contact</h2>
+    <p>For questions contact us via the bot's Discord server.</p>
+    </body></html>
+    """
+
+
+@app.get("/privacy", response_class=HTMLResponse)
+async def privacy():
+    return """
+    <html><head><title>YGOGuesser — Privacy Policy</title></head>
+    <body style="font-family:sans-serif;max-width:700px;margin:40px auto;padding:0 20px">
+    <h1>Privacy Policy</h1>
+    <p><strong>Last updated:</strong> 2025</p>
+    <h2>1. Data We Collect</h2>
+    <p>When you use YGOGuesser we collect and store:</p>
+    <ul>
+      <li>Your Discord user ID</li>
+      <li>Your Discord username</li>
+      <li>Your game scores and results</li>
+    </ul>
+    <h2>2. How We Use It</h2>
+    <p>This data is used exclusively to power the in-game ranking system. We do not sell, share or use your data for any other purpose.</p>
+    <h2>3. Data Storage</h2>
+    <p>Data is stored securely in Supabase. We do not store messages, server information or any other Discord data.</p>
+    <h2>4. Data Deletion</h2>
+    <p>To request deletion of your data, contact us via the bot's Discord server.</p>
+    <h2>5. Contact</h2>
+    <p>For privacy concerns contact us via the bot's Discord server.</p>
+    </body></html>
+    """
 
 
 @app.post("/")
