@@ -1,7 +1,7 @@
 import re
 import io
 from db.database import Database
-from game.yugioh import fetch_random_card, build_hints
+from game.yugioh import fetch_random_card, build_hints, fetch_card_for_price
 from game.zoom import get_zoomed_image, zoom_score, MAX_ZOOM_LEVEL
 
 MAX_HINTS = 5
@@ -12,7 +12,36 @@ def calculate_score(hints_revealed: int) -> int:
 
 
 def normalize_name(name: str) -> str:
-    return re.sub(r"[^a-z0-9]", "", name.lower())
+    return re.sub(r"[^a-z0-9]", "", name.strip().lower())
+
+
+def _build_price_message(champion: dict, challenger: dict, score: int, prefix: str = "") -> dict:
+    return {
+        "content": f"{prefix}💰 **¿Cuál carta es más cara?** | Puntaje: **{score}**",
+        "embeds": [
+            {
+                "title": f"Carta 1: {champion['name']}",
+                "description": f"📦 {champion['set_name']}\n🏷️ {champion['set_rarity']}",
+                "image": {"url": champion["image_url"]},
+                "color": 0xF1C40F,
+            },
+            {
+                "title": f"Carta 2: {challenger['name']}",
+                "description": f"📦 {challenger['set_name']}\n🏷️ {challenger['set_rarity']}",
+                "image": {"url": challenger["image_url"]},
+                "color": 0xF1C40F,
+            },
+        ],
+        "components": [
+            {
+                "type": 1,
+                "components": [
+                    {"type": 2, "style": 1, "label": "Carta 1", "custom_id": "price_1"},
+                    {"type": 2, "style": 1, "label": "Carta 2", "custom_id": "price_2"},
+                ],
+            }
+        ],
+    }
 
 
 def card_embed(content: str, card: dict, color: int) -> dict:
@@ -115,15 +144,21 @@ class GameManager:
             f"Acertar ahora vale **{score_if_correct} puntos**."
         )
 
-    async def surrender(self, user_id: str) -> str:
+    async def surrender(self, user_id: str) -> str | dict:
         game = self.db.get_active_game(user_id)
         if not game:
             return "No tienes una partida activa. Usa `/jugar` para empezar."
 
-        card = game["card_data"]
+        game_mode = game.get("game_mode", "hints")
         self.db.end_game(game["id"], "lost")
-        self.db.add_score(user_id, 0, won=False)
 
+        if game_mode == "price":
+            score = game["card_data"].get("score", 0)
+            self.db.add_score(user_id, score, won=False)
+            return f"🏳️ Abandonaste el modo precio. Puntaje final: **{score} puntos**."
+
+        card = game["card_data"]
+        self.db.add_score(user_id, 0, won=False)
         return card_embed(
             f"🏳️ Te rendiste. La carta era **{card['name']}**.",
             card, 0xE74C3C
@@ -239,6 +274,86 @@ class GameManager:
                 f"Acertar ahora vale **{score} puntos**."
             ),
             "image": img,
+        }
+
+    async def start_price_game(self, user_id: str, username: str) -> dict:
+        existing = self.db.get_active_game(user_id)
+        if existing:
+            return {"content": "Ya tienes una partida activa. Usa `/rendirse` para abandonarla."}
+
+        champion = fetch_card_for_price()
+        if not champion:
+            return {"content": "No se pudieron obtener cartas con precio. Intenta de nuevo."}
+        challenger = fetch_card_for_price(exclude_names={champion["name"]})
+        if not challenger:
+            return {"content": "No se pudieron obtener cartas con precio. Intenta de nuevo."}
+
+        self.db.upsert_user(user_id, username)
+        state = {"champion": champion, "challenger": challenger, "champion_wins": 0, "score": 0}
+        self.db.create_game(user_id, champion["name"], state, game_mode="price")
+
+        return _build_price_message(champion, challenger, score=0)
+
+    async def choose_price(self, user_id: str, choice: int) -> dict:
+        game = self.db.get_active_game(user_id)
+        if not game or game.get("game_mode") != "price":
+            return {"content": "No tienes una partida de precio activa. Usa `/precio` para empezar."}
+
+        state = game["card_data"]
+        champion = state["champion"]
+        challenger = state["challenger"]
+        score = state["score"]
+        champion_wins = state["champion_wins"]
+
+        correct_choice = 1 if champion["price"] >= challenger["price"] else 2
+        correct_card = champion if correct_choice == 1 else challenger
+        wrong_card = challenger if correct_choice == 1 else champion
+
+        if choice == correct_choice:
+            score += 1
+            winner = correct_card
+            new_champion_wins = (champion_wins + 1) if winner["name"] == champion["name"] else 1
+
+            if new_champion_wins >= 2:
+                new_champion = fetch_card_for_price(exclude_names={winner["name"]})
+                new_champion_wins = 0
+            else:
+                new_champion = winner
+
+            if not new_champion:
+                self.db.end_game(game["id"], "won")
+                self.db.add_score(user_id, score, won=True)
+                return {"content": f"✅ ¡Correcto! No hay más cartas disponibles. Puntaje final: **{score} puntos**."}
+
+            new_challenger = fetch_card_for_price(exclude_names={new_champion["name"]})
+            if not new_challenger:
+                self.db.end_game(game["id"], "won")
+                self.db.add_score(user_id, score, won=True)
+                return {"content": f"✅ ¡Correcto! No hay más cartas disponibles. Puntaje final: **{score} puntos**."}
+
+            state.update({"champion": new_champion, "challenger": new_challenger, "champion_wins": new_champion_wins, "score": score})
+            self.db.update_game_data(game["id"], state)
+
+            prefix = (
+                f"✅ ¡Correcto! **{correct_card['name']}** valía **${correct_card['price']:.2f}** "
+                f"vs **${wrong_card['price']:.2f}**.\n\n"
+            )
+            return _build_price_message(new_champion, new_challenger, score, prefix=prefix)
+
+        # Incorrecto — fin de partida
+        self.db.end_game(game["id"], "lost")
+        self.db.add_score(user_id, score, won=False)
+        return {
+            "content": (
+                f"❌ **Incorrecto.** La más cara era **{correct_card['name']}** "
+                f"con **${correct_card['price']:.2f}** (vs **${wrong_card['price']:.2f}**).\n"
+                f"🏆 Puntaje final: **{score} puntos**."
+            ),
+            "embeds": [
+                {"title": f"✅ {correct_card['name']} — ${correct_card['price']:.2f}", "image": {"url": correct_card["image_url"]}, "color": 0x2ECC71},
+                {"title": f"❌ {wrong_card['name']} — ${wrong_card['price']:.2f}", "image": {"url": wrong_card["image_url"]}, "color": 0xE74C3C},
+            ],
+            "components": [],
         }
 
     async def get_ranking(self) -> str:

@@ -60,6 +60,26 @@ COMMANDS = [
         "name": "zoom-pista",
         "description": "Avanza al siguiente nivel de zoom (reduce el puntaje posible).",
     },
+    {
+        "name": "precio",
+        "description": "Inicia el modo precio: adivina qué carta es más cara.",
+    },
+    {
+        "name": "elegir",
+        "description": "Elige qué carta crees que es más cara.",
+        "options": [
+            {
+                "name": "opcion",
+                "description": "¿Cuál carta es más cara?",
+                "type": 4,
+                "required": True,
+                "choices": [
+                    {"name": "Carta 1", "value": 1},
+                    {"name": "Carta 2", "value": 2},
+                ],
+            }
+        ],
+    },
 ]
 
 url = f"https://discord.com/api/v10/applications/{APPLICATION_ID}/commands"

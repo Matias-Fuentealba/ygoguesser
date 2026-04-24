@@ -93,6 +93,11 @@ class Database:
             {"attempts_on_hint": current + 1}
         ).eq("id", game_id).execute()
 
+    def update_game_data(self, game_id: str, card_data: dict):
+        self.client.table("games").update(
+            {"card_data": card_data}
+        ).eq("id", game_id).execute()
+
     def end_game(self, game_id: str, status: str):
         self.client.table("games").update(
             {"status": status}

@@ -97,10 +97,32 @@ async def process_command(payload: dict, token: str):
         response = await gm.guess_zoom(user_id, username, guess)
     elif command == "zoom-pista":
         response = await gm.next_zoom(user_id)
+    elif command == "precio":
+        response = await gm.start_price_game(user_id, username)
+    elif command == "elegir":
+        options = payload["data"].get("options", [])
+        choice = int(options[0]["value"]) if options else 1
+        response = await gm.choose_price(user_id, choice)
     else:
         response = "Comando no reconocido."
 
     await send_followup(token, response)
+
+
+async def process_component(payload: dict, token: str):
+    custom_id = payload["data"]["custom_id"]
+    member = payload.get("member") or {}
+    user = member.get("user") or payload.get("user", {})
+    user_id = user.get("id", "")
+    username = user.get("username", "unknown")
+
+    db = Database()
+    gm = GameManager(db)
+
+    if custom_id in ("price_1", "price_2"):
+        choice = int(custom_id[-1])
+        response = await gm.choose_price(user_id, choice)
+        await send_followup(token, response)
 
 
 @app.get("/")
@@ -173,5 +195,9 @@ async def interactions(request: Request, background_tasks: BackgroundTasks):
     if payload["type"] == 2:
         background_tasks.add_task(process_command, payload, payload["token"])
         return JSONResponse({"type": 5})
+
+    if payload["type"] == 3:
+        background_tasks.add_task(process_component, payload, payload["token"])
+        return JSONResponse({"type": 6})
 
     return JSONResponse({"type": 1})

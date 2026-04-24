@@ -16,6 +16,43 @@ EXTRA_DECK_TYPES = {"Fusion", "Synchro", "XYZ", "Link"}
 BASE_URL = "https://db.ygoprodeck.com/api/v7/cardinfo.php"
 
 
+def fetch_card_for_price(exclude_names: set = None) -> dict | None:
+    try:
+        offset = random.randint(0, 800)
+        resp = requests.get(
+            BASE_URL,
+            params={"num": 20, "offset": offset},
+            timeout=5,
+        )
+        resp.raise_for_status()
+        cards = resp.json().get("data", [])
+
+        valid = []
+        for card in cards:
+            if exclude_names and card["name"] in exclude_names:
+                continue
+            prices = card.get("card_prices", [{}])[0]
+            price = float(prices.get("tcgplayer_price") or 0)
+            if price > 0:
+                valid.append((card, price))
+
+        if not valid:
+            return None
+
+        card, price = random.choice(valid)
+        sets = card.get("card_sets", [])
+        set_info = random.choice(sets) if sets else {}
+        return {
+            "name": card["name"],
+            "image_url": card["card_images"][0]["image_url"] if card.get("card_images") else "",
+            "price": price,
+            "set_name": set_info.get("set_name", "Set desconocido"),
+            "set_rarity": set_info.get("set_rarity", ""),
+        }
+    except Exception:
+        return None
+
+
 def fetch_random_card() -> dict | None:
     monster_type = random.choice(MONSTER_TYPES)
     try:
