@@ -198,7 +198,10 @@ async def interactions(request: Request, background_tasks: BackgroundTasks):
         return JSONResponse({"type": 5})
 
     if payload["type"] == 3:
+        custom_id = payload["data"]["custom_id"]
         background_tasks.add_task(process_component, payload, payload["token"])
-        return JSONResponse({"type": 6})
+        # Mode buttons create a new message; price buttons update the existing one
+        response_type = 6 if custom_id.startswith("price_") else 5
+        return JSONResponse({"type": response_type})
 
     return JSONResponse({"type": 1})
