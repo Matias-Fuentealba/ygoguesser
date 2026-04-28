@@ -59,9 +59,9 @@ async def send_followup(token: str, response: str | dict):
         elif isinstance(response, dict) and response.get("embeds"):
             await client.patch(url, json=response)
 
-        # Plain text or simple dict with content
+        # Plain text or simple dict with content (and optional components)
         elif isinstance(response, dict):
-            await client.patch(url, json={"content": response.get("content", "")})
+            await client.patch(url, json=response)
 
         else:
             await client.patch(url, json={"content": response})
