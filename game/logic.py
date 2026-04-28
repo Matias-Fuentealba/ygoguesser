@@ -55,11 +55,32 @@ class GameManager:
     def __init__(self, db: Database):
         self.db = db
 
-    async def start_game(self, user_id: str, username: str) -> str:
+    async def start_game(self, user_id: str, username: str) -> dict:
         existing = self.db.get_active_game(user_id)
         if existing:
-            return "Ya tienes una partida activa. Usa `/adivinar`, `/pista` o `/rendirse`."
+            mode = existing.get("game_mode", "hints")
+            hints_map = {"hints": "`/pista` y `/adivinar`", "zoom": "`/zoom-pista` y `/adivinar-zoom`", "price": "los botones"}
+            return {"content": f"Ya tienes una partida activa. Usa {hints_map.get(mode, '`/rendirse`')} o `/rendirse`."}
 
+        return {
+            "content": (
+                "🎮 **Bienvenido a YGOGuesser!**\n\n"
+                "Pon a prueba tu conocimiento de cartas Yu-Gi-Oh! Elige un modo:\n\n"
+                "🃏 **Modo Pistas** — Se revelan pistas progresivas sobre una carta. Cuantas menos pistas uses, más puntos ganas.\n"
+                "🔍 **Modo Zoom** — Se muestra una imagen muy zoomeada de la carta. Si fallas, el zoom se aleja poco a poco.\n"
+                "💰 **Modo Precio** — Se muestran dos cartas. Adivina cuál es más cara en el mercado TCG. ¡Un fallo y termina la racha!\n"
+            ),
+            "components": [{
+                "type": 1,
+                "components": [
+                    {"type": 2, "style": 1, "label": "🃏 Modo Pistas", "custom_id": "mode_hints"},
+                    {"type": 2, "style": 2, "label": "🔍 Modo Zoom", "custom_id": "mode_zoom"},
+                    {"type": 2, "style": 4, "label": "💰 Modo Precio", "custom_id": "mode_price"},
+                ],
+            }],
+        }
+
+    async def start_hints_game(self, user_id: str, username: str) -> str:
         card = fetch_random_card()
         if not card:
             return "No se pudo obtener una carta. Intenta de nuevo más tarde."
@@ -69,7 +90,7 @@ class GameManager:
 
         hints = build_hints(card)
         return (
-            f"🎮 **¡Nueva partida iniciada!**\n\n"
+            f"🃏 **¡Modo Pistas iniciado!**\n\n"
             f"Aquí va la primera pista:\n{hints[0]}\n\n"
             f"Tienes hasta **{MAX_HINTS} pistas** disponibles.\n"
             f"➡️ Usa `/pista` para más pistas o `/adivinar carta:<nombre>` para intentar."

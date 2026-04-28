@@ -11,10 +11,12 @@ load_dotenv()
 APPLICATION_ID = os.environ["DISCORD_APPLICATION_ID"]
 BOT_TOKEN = os.environ["DISCORD_TOKEN"]
 
+GUILD_ID = "916429226171826236"
+
 COMMANDS = [
     {
         "name": "jugar",
-        "description": "Inicia una nueva partida de adivinanza de cartas Yu-Gi-Oh.",
+        "description": "Inicia una nueva partida de YGOGuesser.",
     },
     {
         "name": "pista",
@@ -26,23 +28,11 @@ COMMANDS = [
         "options": [
             {
                 "name": "carta",
-                "description": "Nombre de la carta que querés adivinar",
-                "type": 3,  # STRING
+                "description": "Nombre de la carta que quieres adivinar",
+                "type": 3,
                 "required": True,
             }
         ],
-    },
-    {
-        "name": "rendirse",
-        "description": "Abandona la partida actual y revela la carta.",
-    },
-    {
-        "name": "ranking",
-        "description": "Muestra el top 10 de jugadores.",
-    },
-    {
-        "name": "zoom",
-        "description": "Inicia una partida de zoom: adivina la carta a partir de una imagen muy zoomeada.",
     },
     {
         "name": "adivinar-zoom",
@@ -61,28 +51,16 @@ COMMANDS = [
         "description": "Avanza al siguiente nivel de zoom (reduce el puntaje posible).",
     },
     {
-        "name": "precio",
-        "description": "Inicia el modo precio: adivina qué carta es más cara.",
+        "name": "rendirse",
+        "description": "Abandona la partida actual.",
     },
     {
-        "name": "elegir",
-        "description": "Elige qué carta crees que es más cara.",
-        "options": [
-            {
-                "name": "opcion",
-                "description": "¿Cuál carta es más cara?",
-                "type": 4,
-                "required": True,
-                "choices": [
-                    {"name": "Carta 1", "value": 1},
-                    {"name": "Carta 2", "value": 2},
-                ],
-            }
-        ],
+        "name": "ranking",
+        "description": "Muestra el top 10 de jugadores.",
     },
 ]
 
-url = f"https://discord.com/api/v10/applications/{APPLICATION_ID}/commands"
+url = f"https://discord.com/api/v10/applications/{APPLICATION_ID}/guilds/{GUILD_ID}/commands"
 headers = {"Authorization": f"Bot {BOT_TOKEN}"}
 
 resp = requests.put(url, headers=headers, json=COMMANDS)

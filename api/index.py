@@ -89,20 +89,12 @@ async def process_command(payload: dict, token: str):
         response = await gm.surrender(user_id)
     elif command == "ranking":
         response = await gm.get_ranking()
-    elif command == "zoom":
-        response = await gm.start_zoom(user_id, username)
     elif command == "adivinar-zoom":
         options = payload["data"].get("options", [])
         guess = options[0]["value"] if options else ""
         response = await gm.guess_zoom(user_id, username, guess)
     elif command == "zoom-pista":
         response = await gm.next_zoom(user_id)
-    elif command == "precio":
-        response = await gm.start_price_game(user_id, username)
-    elif command == "elegir":
-        options = payload["data"].get("options", [])
-        choice = int(options[0]["value"]) if options else 1
-        response = await gm.choose_price(user_id, choice)
     else:
         response = "Comando no reconocido."
 
@@ -119,10 +111,19 @@ async def process_component(payload: dict, token: str):
     db = Database()
     gm = GameManager(db)
 
-    if custom_id in ("price_1", "price_2"):
+    if custom_id == "mode_hints":
+        response = await gm.start_hints_game(user_id, username)
+    elif custom_id == "mode_zoom":
+        response = await gm.start_zoom(user_id, username)
+    elif custom_id == "mode_price":
+        response = await gm.start_price_game(user_id, username)
+    elif custom_id in ("price_1", "price_2"):
         choice = int(custom_id[-1])
         response = await gm.choose_price(user_id, choice)
-        await send_followup(token, response)
+    else:
+        response = "Acción no reconocida."
+
+    await send_followup(token, response)
 
 
 @app.get("/")
