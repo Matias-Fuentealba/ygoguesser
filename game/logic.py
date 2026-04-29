@@ -461,6 +461,50 @@ class GameManager:
             "components": self._x10_button(),
         }
 
+    async def get_collection(self, user_id: str) -> dict:
+        cards = self.db.get_collection(user_id)
+        if not cards:
+            return {"content": "No tienes cartas aún. Usa `/sobre` para abrir tu primer sobre."}
+
+        rarity_order = ["secret", "ultra", "super", "rare", "common"]
+        rarity_names = {"secret": "Secret Rare", "ultra": "Ultra Rare", "super": "Super Rare", "rare": "Rare", "common": "Common"}
+        grouped = {r: [] for r in rarity_order}
+        for c in cards:
+            r = c["rarity"]
+            if r in grouped:
+                grouped[r].append(c)
+
+        total_unique = len(cards)
+        total_copies = sum(c["count"] for c in cards)
+
+        lines = [f"📦 **Tu colección** — {total_unique} cartas únicas / {total_copies} copias totales\n"]
+        best_card = None
+        for r in rarity_order:
+            pool = grouped[r]
+            if not pool:
+                continue
+            lines.append(f"{RARITY_EMOJIS[r]} **{rarity_names[r]}** ({len(pool)})")
+            for c in sorted(pool, key=lambda x: x["card_name"]):
+                suffix = f" ×{c['count']}" if c["count"] > 1 else ""
+                lines.append(f"　{c['card_name']}{suffix}")
+            if best_card is None:
+                best_card = pool[0]
+
+        embed = None
+        if best_card:
+            embed = {
+                "title": best_card["card_name"],
+                "description": f"{RARITY_EMOJIS[best_card['rarity']]} {rarity_names[best_card['rarity']]}",
+                "thumbnail": {"url": best_card.get("image_url", "")},
+                "color": RARITY_COLORS[best_card["rarity"]],
+                "footer": {"text": "Usa /sobre para conseguir más cartas"},
+            }
+
+        result = {"content": "\n".join(lines)}
+        if embed:
+            result["embeds"] = [embed]
+        return result
+
     async def get_ranking(self) -> str:
         rows = self.db.get_ranking()
         if not rows:

@@ -62,6 +62,10 @@ COMMANDS = [
         "name": "sobre",
         "description": "Abre un sobre gratis (1h de cooldown) y obtén cartas del banner actual.",
     },
+    {
+        "name": "coleccion",
+        "description": "Muestra todas las cartas que has conseguido.",
+    },
 ]
 
 url = f"https://discord.com/api/v10/applications/{APPLICATION_ID}/guilds/{GUILD_ID}/commands"

@@ -91,6 +91,8 @@ async def process_command(payload: dict, token: str):
         response = await gm.get_ranking()
     elif command == "sobre":
         response = await gm.open_sobre(user_id, username)
+    elif command == "coleccion":
+        response = await gm.get_collection(user_id)
     elif command == "adivinar-zoom":
         options = payload["data"].get("options", [])
         guess = options[0]["value"] if options else ""
