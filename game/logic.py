@@ -493,49 +493,48 @@ class GameManager:
 
         return {"embeds": [embed]}
 
-    async def get_collection(self, user_id: str) -> dict:
+    async def get_collection(self, user_id: str, page: int = 0) -> dict:
         cards = self.db.get_collection(user_id)
         if not cards:
             return {"content": "No tienes cartas aún. Usa `/sobre` para abrir tu primer sobre."}
 
         rarity_order = ["secret", "ultra", "super", "rare", "common"]
         rarity_names = {"secret": "Secret Rare", "ultra": "Ultra Rare", "super": "Super Rare", "rare": "Rare", "common": "Common"}
-        grouped = {r: [] for r in rarity_order}
-        for c in cards:
-            r = c["rarity"]
-            if r in grouped:
-                grouped[r].append(c)
+        cards_sorted = sorted(cards, key=lambda x: (rarity_order.index(x["rarity"]), x["card_name"]))
 
-        total_unique = len(cards)
-        total_copies = sum(c["count"] for c in cards)
+        total_unique = len(cards_sorted)
+        total_copies = sum(c["count"] for c in cards_sorted)
 
-        lines = [f"📦 **Tu colección** — {total_unique} cartas únicas / {total_copies} copias totales\n"]
-        best_card = None
-        for r in rarity_order:
-            pool = grouped[r]
-            if not pool:
-                continue
-            lines.append(f"{RARITY_EMOJIS[r]} **{rarity_names[r]}** ({len(pool)})")
-            for c in sorted(pool, key=lambda x: x["card_name"]):
-                suffix = f" ×{c['count']}" if c["count"] > 1 else ""
-                lines.append(f"　{c['card_name']}{suffix}")
-            if best_card is None:
-                best_card = pool[0]
+        page_size = 15
+        total_pages = max(1, (total_unique + page_size - 1) // page_size)
+        page = max(0, min(page, total_pages - 1))
+        page_cards = cards_sorted[page * page_size:(page + 1) * page_size]
 
-        embed = None
-        if best_card:
-            embed = {
-                "title": best_card["card_name"],
-                "description": f"{RARITY_EMOJIS[best_card['rarity']]} {rarity_names[best_card['rarity']]}",
-                "thumbnail": {"url": best_card.get("image_url", "")},
-                "color": RARITY_COLORS[best_card["rarity"]],
-                "footer": {"text": "Usa /sobre para conseguir más cartas"},
-            }
+        best = page_cards[0]
+        fields = []
+        for c in page_cards:
+            fields.append({
+                "name": f"{RARITY_EMOJIS[c['rarity']]} {c['card_name']}",
+                "value": f"×{c['count']}",
+                "inline": True,
+            })
 
-        result = {"content": "\n".join(lines)}
-        if embed:
-            result["embeds"] = [embed]
-        return result
+        embed = {
+            "title": f"📦 Colección — {total_unique} únicas · {total_copies} copias",
+            "thumbnail": {"url": best.get("image_url", "")},
+            "fields": fields,
+            "color": RARITY_COLORS[best["rarity"]],
+            "footer": {"text": f"Página {page + 1} / {total_pages}  •  Usa /sobre para conseguir más cartas"},
+        }
+
+        buttons = []
+        if page > 0:
+            buttons.append({"type": 2, "style": 2, "label": "◀", "custom_id": f"coleccion_page:{page - 1}"})
+        buttons.append({"type": 2, "style": 2, "label": f"{page + 1} / {total_pages}", "custom_id": "coleccion_noop", "disabled": True})
+        if page < total_pages - 1:
+            buttons.append({"type": 2, "style": 1, "label": "▶", "custom_id": f"coleccion_page:{page + 1}"})
+
+        return {"embeds": [embed], "components": [{"type": 1, "components": buttons}]}
 
     async def get_ranking(self) -> str:
         rows = self.db.get_ranking()

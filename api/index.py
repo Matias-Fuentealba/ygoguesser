@@ -128,6 +128,9 @@ async def process_component(payload: dict, token: str):
         response = await gm.choose_price(user_id, choice)
     elif custom_id == "gacha_x10":
         response = await gm.open_sobre_x10(user_id)
+    elif custom_id.startswith("coleccion_page:"):
+        page = int(custom_id.split(":")[1])
+        response = await gm.get_collection(user_id, page)
     else:
         response = "Acción no reconocida."
 
@@ -278,8 +281,9 @@ async def interactions(request: Request, background_tasks: BackgroundTasks):
     if payload["type"] == 3:
         custom_id = payload["data"]["custom_id"]
         background_tasks.add_task(process_component, payload, payload["token"])
-        # Price buttons update the existing message; everything else creates a new one
-        response_type = 6 if custom_id.startswith("price_") else 5
+        # Buttons that update in-place vs create a new message
+        updates_in_place = custom_id.startswith("price_") or custom_id.startswith("coleccion_")
+        response_type = 6 if updates_in_place else 5
         return JSONResponse({"type": response_type})
 
     return JSONResponse({"type": 1})

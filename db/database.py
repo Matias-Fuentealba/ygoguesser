@@ -166,9 +166,8 @@ class Database:
     def get_collection(self, discord_id: str) -> list[dict]:
         result = (
             self.client.table("collection")
-            .select("card_name, rarity, count")
+            .select("card_id, card_name, rarity, image_url, count")
             .eq("discord_id", discord_id)
-            .order("rarity")
             .execute()
         )
         return result.data
