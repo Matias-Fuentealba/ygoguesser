@@ -461,6 +461,37 @@ class GameManager:
             "components": self._x10_button(),
         }
 
+    async def get_gacha_info(self) -> dict:
+        banner = DUEL_MONSTERS_BANNER
+        pool_sizes = {r: len(banner.get(r, [])) for r in ("secret", "ultra", "super", "rare", "common")}
+        rarity_names = {"secret": "Secret Rare", "ultra": "Ultra Rare", "super": "Super Rare", "rare": "Rare", "common": "Common"}
+        pool_lines = "  ".join(
+            f"{RARITY_EMOJIS[r]} {rarity_names[r]}: {pool_sizes[r]} cartas"
+            for r in ("secret", "ultra", "super", "rare", "common")
+        )
+
+        embed = {
+            "title": f"🎴 Banner: {banner['name']}",
+            "description": (
+                "**¿Cómo funciona?**\n"
+                "Ganas **monedas** jugando — son los mismos puntos del ranking pero se guardan por separado, así que gastarlas no baja tu posición.\n\n"
+                f"🆓 **`/sobre`** — Sobre gratis de 5 cartas cada **1 hora**\n"
+                f"💰 **Botón x10** — 10 cartas por **{X10_COST} monedas**, garantiza al menos 1 Ultra Rare\n\n"
+                "**Probabilidades:**\n"
+                f"{RARITY_EMOJIS['secret']} Secret Rare — 1%\n"
+                f"{RARITY_EMOJIS['ultra']} Ultra Rare — 4%\n"
+                f"{RARITY_EMOJIS['super']} Super Rare — 15%\n"
+                f"{RARITY_EMOJIS['rare']} Rare — 30%\n"
+                f"{RARITY_EMOJIS['common']} Common — 50%\n\n"
+                f"**Pool del banner:**\n{pool_lines}"
+            ),
+            "color": 0xFFD700,
+        }
+        if banner.get("image_url"):
+            embed["image"] = {"url": banner["image_url"]}
+
+        return {"embeds": [embed]}
+
     async def get_collection(self, user_id: str) -> dict:
         cards = self.db.get_collection(user_id)
         if not cards:

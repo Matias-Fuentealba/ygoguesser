@@ -23,7 +23,8 @@ RARITY_COLORS = {
 }
 
 DUEL_MONSTERS_BANNER = {
-    "name": "Clásico Duel Monsters",
+    "name": "Original Legends",
+    "image_url": "https://ygoguesser.vercel.app/original-legends.png",
     "secret": [
         {"id": 23995346, "name": "Blue-Eyes Ultimate Dragon"},
         {"id": 33396948, "name": "Exodia the Forbidden One"},

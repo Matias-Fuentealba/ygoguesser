@@ -93,6 +93,8 @@ async def process_command(payload: dict, token: str):
         response = await gm.open_sobre(user_id, username)
     elif command == "coleccion":
         response = await gm.get_collection(user_id)
+    elif command == "gacha":
+        response = await gm.get_gacha_info()
     elif command == "adivinar-zoom":
         options = payload["data"].get("options", [])
         guess = options[0]["value"] if options else ""
@@ -225,6 +227,12 @@ async def banner():
           <div style="display:flex;flex-wrap:wrap;gap:12px">{cards_html}</div>
         </div>"""
 
+    banner_img = DUEL_MONSTERS_BANNER.get("image_url", "")
+    banner_img_html = (
+        f'<img src="{banner_img}" style="max-width:100%;border-radius:12px;margin-bottom:24px;display:block">'
+        if banner_img else ""
+    )
+
     return f"""
     <html>
     <head>
@@ -233,6 +241,7 @@ async def banner():
     </head>
     <body style="font-family:sans-serif;background:#1a1a2e;color:#eee;max-width:1000px;margin:40px auto;padding:0 20px">
       <h1 style="color:#FFD700">🎴 Banner: {DUEL_MONSTERS_BANNER['name']}</h1>
+      {banner_img_html}
       <p style="color:#aaa">Las imágenes con borde rojo tienen un ID incorrecto.</p>
       {sections}
     </body>

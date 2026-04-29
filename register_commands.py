@@ -66,6 +66,10 @@ COMMANDS = [
         "name": "coleccion",
         "description": "Muestra todas las cartas que has conseguido.",
     },
+    {
+        "name": "gacha",
+        "description": "Info del banner actual: probabilidades, pool de cartas y cómo funciona.",
+    },
 ]
 
 url = f"https://discord.com/api/v10/applications/{APPLICATION_ID}/guilds/{GUILD_ID}/commands"
