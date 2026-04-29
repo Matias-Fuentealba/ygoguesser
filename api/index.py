@@ -6,7 +6,7 @@ import httpx
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from fastapi import FastAPI, Request, HTTPException, BackgroundTasks
-from fastapi.responses import JSONResponse, HTMLResponse
+from fastapi.responses import JSONResponse, HTMLResponse, FileResponse
 import nacl.signing
 import nacl.encoding
 import nacl.exceptions
@@ -137,6 +137,12 @@ async def process_component(payload: dict, token: str):
 @app.get("/")
 async def health():
     return {"status": "ok"}
+
+
+@app.get("/original-legends.png")
+async def banner_image():
+    path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "public", "original-legends.png")
+    return FileResponse(path, media_type="image/png")
 
 
 @app.get("/terms", response_class=HTMLResponse)
