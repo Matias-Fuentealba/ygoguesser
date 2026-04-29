@@ -442,21 +442,22 @@ class GameManager:
 
     def _build_pull_response(self, cards: list[dict], header: str) -> dict:
         rarity_order = ["secret", "ultra", "super", "rare", "common"]
+        rarity_names = {"secret": "Secret Rare", "ultra": "Ultra Rare", "super": "Super Rare", "rare": "Rare", "common": "Common"}
         cards_sorted = sorted(cards, key=lambda x: rarity_order.index(x["rarity"]))
 
-        lines = [header]
-        for c in cards_sorted:
-            lines.append(f"{RARITY_EMOJIS[c['rarity']]} **{c['name']}**")
+        embeds = [
+            {
+                "title": c["name"],
+                "description": f"{RARITY_EMOJIS[c['rarity']]} {rarity_names[c['rarity']]}",
+                "thumbnail": {"url": c["image_url"]},
+                "color": RARITY_COLORS[c["rarity"]],
+            }
+            for c in cards_sorted
+        ]
 
-        best = cards_sorted[0]
         return {
-            "content": "\n".join(lines),
-            "embeds": [{
-                "title": best["name"],
-                "description": f"{RARITY_EMOJIS[best['rarity']]} {best['rarity'].replace('secret', 'Secret').replace('ultra', 'Ultra').replace('super', 'Super').replace('rare', 'Rare').replace('common', 'Common')} Rare",
-                "image": {"url": best["image_url"]},
-                "color": RARITY_COLORS[best["rarity"]],
-            }],
+            "content": header,
+            "embeds": embeds,
             "components": self._x10_button(),
         }
 
