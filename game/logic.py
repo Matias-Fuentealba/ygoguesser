@@ -445,19 +445,19 @@ class GameManager:
         rarity_names = {"secret": "Secret Rare", "ultra": "Ultra Rare", "super": "Super Rare", "rare": "Rare", "common": "Common"}
         cards_sorted = sorted(cards, key=lambda x: rarity_order.index(x["rarity"]))
 
-        embeds = [
-            {
-                "title": c["name"],
-                "description": f"{RARITY_EMOJIS[c['rarity']]} {rarity_names[c['rarity']]}",
-                "thumbnail": {"url": c["image_url"]},
-                "color": RARITY_COLORS[c["rarity"]],
-            }
-            for c in cards_sorted
-        ]
+        lines = [header]
+        for c in cards_sorted:
+            lines.append(f"{RARITY_EMOJIS[c['rarity']]} **{c['name']}** — {rarity_names[c['rarity']]}")
 
+        best = cards_sorted[0]
         return {
-            "content": header,
-            "embeds": embeds,
+            "content": "\n".join(lines),
+            "embeds": [{
+                "title": f"{RARITY_EMOJIS[best['rarity']]} {best['name']}",
+                "description": rarity_names[best["rarity"]],
+                "image": {"url": best["image_url"]},
+                "color": RARITY_COLORS[best["rarity"]],
+            }],
             "components": self._x10_button(),
         }
 
