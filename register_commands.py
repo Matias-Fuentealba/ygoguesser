@@ -58,6 +58,10 @@ COMMANDS = [
         "name": "ranking",
         "description": "Muestra el top 10 de jugadores.",
     },
+    {
+        "name": "sobre",
+        "description": "Abre un sobre gratis (1h de cooldown) y obtén cartas del banner actual.",
+    },
 ]
 
 url = f"https://discord.com/api/v10/applications/{APPLICATION_ID}/guilds/{GUILD_ID}/commands"

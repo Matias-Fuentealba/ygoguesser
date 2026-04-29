@@ -27,7 +27,7 @@ class Database:
     def add_score(self, discord_id: str, score: int, won: bool):
         user = (
             self.client.table("users")
-            .select("total_score, games_played, games_won")
+            .select("total_score, games_played, games_won, coins_balance")
             .eq("discord_id", discord_id)
             .single()
             .execute()
@@ -37,6 +37,7 @@ class Database:
             "total_score": user["total_score"] + score,
             "games_played": user["games_played"] + 1,
             "games_won": user["games_won"] + (1 if won else 0),
+            "coins_balance": (user.get("coins_balance") or 0) + score,
         }).eq("discord_id", discord_id).execute()
 
     def get_ranking(self, limit: int = 10) -> list:
@@ -102,3 +103,72 @@ class Database:
         self.client.table("games").update(
             {"status": status}
         ).eq("id", game_id).execute()
+
+    # ---------- gacha ----------
+
+    def get_user(self, discord_id: str) -> dict | None:
+        result = (
+            self.client.table("users")
+            .select("*")
+            .eq("discord_id", discord_id)
+            .execute()
+        )
+        return result.data[0] if result.data else None
+
+    def spend_coins(self, discord_id: str, amount: int) -> bool:
+        user = self.get_user(discord_id)
+        if not user or (user.get("coins_balance") or 0) < amount:
+            return False
+        self.client.table("users").update(
+            {"coins_balance": user["coins_balance"] - amount}
+        ).eq("discord_id", discord_id).execute()
+        return True
+
+    def set_last_sobre(self, discord_id: str):
+        from datetime import datetime, timezone
+        self.client.table("users").update(
+            {"last_sobre": datetime.now(timezone.utc).isoformat()}
+        ).eq("discord_id", discord_id).execute()
+
+    def add_to_collection(self, discord_id: str, cards: list[dict]):
+        from collections import Counter
+        pull_counts = Counter(c["card_id"] for c in cards)
+        card_by_id = {c["card_id"]: c for c in cards}
+
+        existing = (
+            self.client.table("collection")
+            .select("card_id, count")
+            .eq("discord_id", discord_id)
+            .in_("card_id", list(pull_counts.keys()))
+            .execute()
+        ).data
+        existing_map = {row["card_id"]: row["count"] for row in existing}
+
+        to_insert = []
+        for card_id, qty in pull_counts.items():
+            card = card_by_id[card_id]
+            if card_id in existing_map:
+                self.client.table("collection").update(
+                    {"count": existing_map[card_id] + qty}
+                ).eq("discord_id", discord_id).eq("card_id", card_id).execute()
+            else:
+                to_insert.append({
+                    "discord_id": discord_id,
+                    "card_id": card_id,
+                    "card_name": card["name"],
+                    "rarity": card["rarity"],
+                    "image_url": card["image_url"],
+                    "count": qty,
+                })
+        if to_insert:
+            self.client.table("collection").insert(to_insert).execute()
+
+    def get_collection(self, discord_id: str) -> list[dict]:
+        result = (
+            self.client.table("collection")
+            .select("card_name, rarity, count")
+            .eq("discord_id", discord_id)
+            .order("rarity")
+            .execute()
+        )
+        return result.data

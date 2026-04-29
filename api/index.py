@@ -89,6 +89,8 @@ async def process_command(payload: dict, token: str):
         response = await gm.surrender(user_id)
     elif command == "ranking":
         response = await gm.get_ranking()
+    elif command == "sobre":
+        response = await gm.open_sobre(user_id, username)
     elif command == "adivinar-zoom":
         options = payload["data"].get("options", [])
         guess = options[0]["value"] if options else ""
@@ -120,6 +122,8 @@ async def process_component(payload: dict, token: str):
     elif custom_id in ("price_1", "price_2"):
         choice = int(custom_id[-1])
         response = await gm.choose_price(user_id, choice)
+    elif custom_id == "gacha_x10":
+        response = await gm.open_sobre_x10(user_id)
     else:
         response = "Acción no reconocida."
 
@@ -179,6 +183,61 @@ async def privacy():
     """
 
 
+@app.get("/banner", response_class=HTMLResponse)
+async def banner():
+    from game.gacha import DUEL_MONSTERS_BANNER, RARITY_EMOJIS
+
+    rarity_labels = {
+        "secret": "Secret Rare",
+        "ultra":  "Ultra Rare",
+        "super":  "Super Rare",
+        "rare":   "Rare",
+        "common": "Common",
+    }
+    rarity_colors = {
+        "secret": "#FFD700",
+        "ultra":  "#FFA500",
+        "super":  "#C0C0C0",
+        "rare":   "#0070DD",
+        "common": "#9D9D9D",
+    }
+
+    sections = ""
+    for rarity in ("secret", "ultra", "super", "rare", "common"):
+        cards = DUEL_MONSTERS_BANNER.get(rarity, [])
+        emoji = RARITY_EMOJIS[rarity]
+        label = rarity_labels[rarity]
+        color = rarity_colors[rarity]
+        cards_html = "".join(
+            f"""<div style="text-align:center;width:120px">
+                  <img src="https://images.ygoprodeck.com/images/cards/{c['id']}.jpg"
+                       width="100" style="border-radius:6px;border:2px solid {color}"
+                       onerror="this.style.border='2px solid red';this.title='ID INCORRECTO'">
+                  <div style="font-size:11px;margin-top:4px;color:#ddd">{c['name']}</div>
+                </div>"""
+            for c in cards
+        )
+        sections += f"""
+        <div style="margin-bottom:32px">
+          <h2 style="color:{color};margin-bottom:12px">{emoji} {label} ({len(cards)})</h2>
+          <div style="display:flex;flex-wrap:wrap;gap:12px">{cards_html}</div>
+        </div>"""
+
+    return f"""
+    <html>
+    <head>
+      <title>YGOGuesser — Banner: {DUEL_MONSTERS_BANNER['name']}</title>
+      <meta charset="utf-8">
+    </head>
+    <body style="font-family:sans-serif;background:#1a1a2e;color:#eee;max-width:1000px;margin:40px auto;padding:0 20px">
+      <h1 style="color:#FFD700">🎴 Banner: {DUEL_MONSTERS_BANNER['name']}</h1>
+      <p style="color:#aaa">Las imágenes con borde rojo tienen un ID incorrecto.</p>
+      {sections}
+    </body>
+    </html>
+    """
+
+
 @app.post("/")
 async def interactions(request: Request, background_tasks: BackgroundTasks):
     signature = request.headers.get("X-Signature-Ed25519", "")
@@ -200,7 +259,7 @@ async def interactions(request: Request, background_tasks: BackgroundTasks):
     if payload["type"] == 3:
         custom_id = payload["data"]["custom_id"]
         background_tasks.add_task(process_component, payload, payload["token"])
-        # Mode buttons create a new message; price buttons update the existing one
+        # Price buttons update the existing message; everything else creates a new one
         response_type = 6 if custom_id.startswith("price_") else 5
         return JSONResponse({"type": response_type})
 

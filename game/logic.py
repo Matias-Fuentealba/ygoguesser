@@ -1,8 +1,14 @@
 import re
 import io
+from datetime import datetime, timezone, timedelta
 from db.database import Database
 from game.yugioh import fetch_random_card, build_hints, fetch_card_for_price
 from game.zoom import get_zoomed_image, zoom_score, MAX_ZOOM_LEVEL
+from game.gacha import (
+    pull_free, pull_x10,
+    DUEL_MONSTERS_BANNER, X10_COST,
+    RARITY_EMOJIS, RARITY_COLORS, COOLDOWN_HOURS,
+)
 
 MAX_HINTS = 5
 
@@ -375,6 +381,83 @@ class GameManager:
                 {"title": f"❌ {wrong_card['name']} — ${wrong_card['price']:.2f}", "image": {"url": wrong_card["image_url"]}, "color": 0xE74C3C},
             ],
             "components": [],
+        }
+
+    def _x10_button(self) -> list:
+        return [{
+            "type": 1,
+            "components": [
+                {"type": 2, "style": 1, "label": f"🎴 x10 ({X10_COST} monedas)", "custom_id": "gacha_x10"},
+            ],
+        }]
+
+    async def open_sobre(self, user_id: str, username: str) -> dict:
+        self.db.upsert_user(user_id, username)
+        user = self.db.get_user(user_id)
+        coins = (user.get("coins_balance") or 0) if user else 0
+
+        last_raw = (user or {}).get("last_sobre")
+        if last_raw:
+            last_dt = datetime.fromisoformat(last_raw)
+            if last_dt.tzinfo is None:
+                last_dt = last_dt.replace(tzinfo=timezone.utc)
+            time_left = timedelta(hours=COOLDOWN_HOURS) - (datetime.now(timezone.utc) - last_dt)
+            if time_left.total_seconds() > 0:
+                mins = int(time_left.total_seconds() // 60)
+                secs = int(time_left.total_seconds() % 60)
+                return {
+                    "content": (
+                        f"⏳ Tu próximo sobre gratis estará disponible en **{mins}m {secs}s**.\n"
+                        f"💰 Tienes **{coins} monedas** disponibles."
+                    ),
+                    "components": self._x10_button(),
+                }
+
+        cards = pull_free(DUEL_MONSTERS_BANNER)
+        self.db.add_to_collection(user_id, cards)
+        self.db.set_last_sobre(user_id)
+
+        return self._build_pull_response(cards, f"🎴 **¡Abriste un sobre!** — *{DUEL_MONSTERS_BANNER['name']}*\n")
+
+    async def open_sobre_x10(self, user_id: str) -> dict:
+        user = self.db.get_user(user_id)
+        if not user:
+            return {"content": "Primero usa `/sobre` para registrarte."}
+
+        coins = user.get("coins_balance") or 0
+        if coins < X10_COST:
+            return {"content": f"❌ Necesitas **{X10_COST} monedas** pero tienes **{coins}**."}
+
+        if not self.db.spend_coins(user_id, X10_COST):
+            return {"content": "❌ No tienes suficientes monedas."}
+
+        cards = pull_x10(DUEL_MONSTERS_BANNER)
+        self.db.add_to_collection(user_id, cards)
+
+        new_balance = coins - X10_COST
+        header = f"🎴 **¡Abriste 10 sobres!** — *{DUEL_MONSTERS_BANNER['name']}*\n"
+        result = self._build_pull_response(cards, header)
+        result["content"] += f"\n💰 Monedas restantes: **{new_balance}**"
+        return result
+
+    def _build_pull_response(self, cards: list[dict], header: str) -> dict:
+        rarity_order = ["secret", "ultra", "super", "rare", "common"]
+        cards_sorted = sorted(cards, key=lambda x: rarity_order.index(x["rarity"]))
+
+        lines = [header]
+        for c in cards_sorted:
+            lines.append(f"{RARITY_EMOJIS[c['rarity']]} **{c['name']}**")
+
+        best = cards_sorted[0]
+        return {
+            "content": "\n".join(lines),
+            "embeds": [{
+                "title": best["name"],
+                "description": f"{RARITY_EMOJIS[best['rarity']]} {best['rarity'].replace('secret', 'Secret').replace('ultra', 'Ultra').replace('super', 'Super').replace('rare', 'Rare').replace('common', 'Common')} Rare",
+                "image": {"url": best["image_url"]},
+                "color": RARITY_COLORS[best["rarity"]],
+            }],
+            "components": self._x10_button(),
         }
 
     async def get_ranking(self) -> str:
