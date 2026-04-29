@@ -417,7 +417,7 @@ class GameManager:
         self.db.add_to_collection(user_id, cards)
         self.db.set_last_sobre(user_id)
 
-        return self._build_pull_response(cards, f"🎴 **¡Abriste un sobre!** — *{DUEL_MONSTERS_BANNER['name']}*\n")
+        return self._build_pull_response(cards, f"🎴 ¡Abriste un sobre! — {DUEL_MONSTERS_BANNER['name']}")
 
     async def open_sobre_x10(self, user_id: str) -> dict:
         user = self.db.get_user(user_id)
@@ -435,9 +435,8 @@ class GameManager:
         self.db.add_to_collection(user_id, cards)
 
         new_balance = coins - X10_COST
-        header = f"🎴 **¡Abriste 10 sobres!** — *{DUEL_MONSTERS_BANNER['name']}*\n"
-        result = self._build_pull_response(cards, header)
-        result["content"] += f"\n💰 Monedas restantes: **{new_balance}**"
+        result = self._build_pull_response(cards, f"🎴 ¡Abriste 10 sobres! — {DUEL_MONSTERS_BANNER['name']}")
+        result["embeds"][0]["footer"] = {"text": f"💰 Monedas restantes: {new_balance}"}
         return result
 
     def _build_pull_response(self, cards: list[dict], header: str) -> dict:
@@ -445,17 +444,21 @@ class GameManager:
         rarity_names = {"secret": "Secret Rare", "ultra": "Ultra Rare", "super": "Super Rare", "rare": "Rare", "common": "Common"}
         cards_sorted = sorted(cards, key=lambda x: rarity_order.index(x["rarity"]))
 
-        lines = [header]
-        for c in cards_sorted:
-            lines.append(f"{RARITY_EMOJIS[c['rarity']]} **{c['name']}** — {rarity_names[c['rarity']]}")
-
         best = cards_sorted[0]
+        fields = [
+            {
+                "name": f"{RARITY_EMOJIS[c['rarity']]} {c['name']}",
+                "value": rarity_names[c["rarity"]],
+                "inline": True,
+            }
+            for c in cards_sorted
+        ]
+
         return {
-            "content": "\n".join(lines),
             "embeds": [{
-                "title": f"{RARITY_EMOJIS[best['rarity']]} {best['name']}",
-                "description": rarity_names[best["rarity"]],
-                "image": {"url": best["image_url"]},
+                "title": header.strip(),
+                "thumbnail": {"url": best["image_url"]},
+                "fields": fields,
                 "color": RARITY_COLORS[best["rarity"]],
             }],
             "components": self._x10_button(),
