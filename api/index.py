@@ -212,24 +212,27 @@ async def banner():
         "common": "#9D9D9D",
     }
 
+    rarity_probs = {"secret": "1%", "ultra": "4%", "super": "15%", "rare": "30%", "common": "50%"}
+
     sections = ""
     for rarity in ("secret", "ultra", "super", "rare", "common"):
         cards = DUEL_MONSTERS_BANNER.get(rarity, [])
         emoji = RARITY_EMOJIS[rarity]
         label = rarity_labels[rarity]
         color = rarity_colors[rarity]
+        prob = rarity_probs[rarity]
         cards_html = "".join(
             f"""<div style="text-align:center;width:120px">
                   <img src="https://images.ygoprodeck.com/images/cards/{c['id']}.jpg"
-                       width="100" style="border-radius:6px;border:2px solid {color}"
-                       onerror="this.style.border='2px solid red';this.title='ID INCORRECTO'">
+                       width="100" style="border-radius:6px;border:2px solid {color}">
                   <div style="font-size:11px;margin-top:4px;color:#ddd">{c['name']}</div>
                 </div>"""
             for c in cards
         )
         sections += f"""
         <div style="margin-bottom:32px">
-          <h2 style="color:{color};margin-bottom:12px">{emoji} {label} ({len(cards)})</h2>
+          <h2 style="color:{color};margin-bottom:4px">{emoji} {label} <span style="font-size:16px;color:#aaa">— {prob}</span></h2>
+          <p style="color:#888;margin:0 0 12px">{len(cards)} cartas en el pool</p>
           <div style="display:flex;flex-wrap:wrap;gap:12px">{cards_html}</div>
         </div>"""
 
@@ -248,7 +251,6 @@ async def banner():
     <body style="font-family:sans-serif;background:#1a1a2e;color:#eee;max-width:1000px;margin:40px auto;padding:0 20px">
       <h1 style="color:#FFD700">🎴 Banner: {DUEL_MONSTERS_BANNER['name']}</h1>
       {banner_img_html}
-      <p style="color:#aaa">Las imágenes con borde rojo tienen un ID incorrecto.</p>
       {sections}
     </body>
     </html>

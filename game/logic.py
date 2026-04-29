@@ -483,7 +483,8 @@ class GameManager:
                 f"{RARITY_EMOJIS['super']} Super Rare — 15%\n"
                 f"{RARITY_EMOJIS['rare']} Rare — 30%\n"
                 f"{RARITY_EMOJIS['common']} Common — 50%\n\n"
-                f"**Pool del banner:**\n{pool_lines}"
+                f"**Pool del banner:**\n{pool_lines}\n\n"
+                "🔗 [Ver todas las cartas del pool](https://ygoguesser.vercel.app/banner)"
             ),
             "color": 0xFFD700,
         }
