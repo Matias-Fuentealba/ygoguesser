@@ -401,14 +401,20 @@ class GameManager:
             last_dt = datetime.fromisoformat(last_raw)
             if last_dt.tzinfo is None:
                 last_dt = last_dt.replace(tzinfo=timezone.utc)
-            time_left = timedelta(hours=COOLDOWN_HOURS) - (datetime.now(timezone.utc) - last_dt)
-            if time_left.total_seconds() > 0:
+            now = datetime.now(timezone.utc)
+            # Cooldown hasta el próximo cambio de hora en punto
+            same_hour = last_dt.year == now.year and last_dt.month == now.month \
+                        and last_dt.day == now.day and last_dt.hour == now.hour
+            if same_hour:
+                next_hour = now.replace(minute=0, second=0, microsecond=0) + timedelta(hours=1)
+                time_left = next_hour - now
                 mins = int(time_left.total_seconds() // 60)
                 secs = int(time_left.total_seconds() % 60)
+                coins_hint = "" if coins > 0 else "\n> 💡 Gana monedas jugando partidas con `/jugar`."
                 return {
                     "content": (
                         f"⏳ Tu próximo sobre gratis estará disponible en **{mins}m {secs}s**.\n"
-                        f"💰 Tienes **{coins} monedas** disponibles."
+                        f"💰 Tienes **{coins} monedas** disponibles.{coins_hint}"
                     ),
                     "components": self._x10_button(),
                 }
