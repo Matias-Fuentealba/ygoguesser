@@ -163,6 +163,24 @@ class Database:
         if to_insert:
             self.client.table("collection").insert(to_insert).execute()
 
+    def sell_duplicates(self, discord_id: str, rarity_values: dict) -> int:
+        cards = self.get_collection(discord_id)
+        duplicates = [c for c in cards if c["count"] > 1]
+        if not duplicates:
+            return 0
+
+        total_coins = 0
+        for card in duplicates:
+            extras = card["count"] - 1
+            total_coins += extras * rarity_values.get(card["rarity"], 1)
+            self.client.table("collection").update({"count": 1}).eq("discord_id", discord_id).eq("card_id", card["card_id"]).execute()
+
+        user = self.get_user(discord_id)
+        self.client.table("users").update({
+            "coins_balance": (user.get("coins_balance") or 0) + total_coins
+        }).eq("discord_id", discord_id).execute()
+        return total_coins
+
     def get_collection(self, discord_id: str) -> list[dict]:
         result = (
             self.client.table("collection")

@@ -84,7 +84,9 @@ async def process_command(payload: dict, token: str):
     elif command == "adivinar":
         options = payload["data"].get("options", [])
         guess = options[0]["value"] if options else ""
-        response = await gm.make_guess(user_id, username, guess)
+        response = await gm.guess(user_id, username, guess)
+    elif command == "zoom-pista":
+        response = await gm.next_zoom(user_id)
     elif command == "rendirse":
         response = await gm.surrender(user_id)
     elif command == "ranking":
@@ -95,12 +97,10 @@ async def process_command(payload: dict, token: str):
         response = await gm.get_collection(user_id)
     elif command == "gacha":
         response = await gm.get_gacha_info()
-    elif command == "adivinar-zoom":
-        options = payload["data"].get("options", [])
-        guess = options[0]["value"] if options else ""
-        response = await gm.guess_zoom(user_id, username, guess)
-    elif command == "zoom-pista":
-        response = await gm.next_zoom(user_id)
+    elif command == "vender":
+        response = await gm.show_sell_duplicates(user_id)
+    elif command == "help":
+        response = await gm.get_help()
     else:
         response = "Comando no reconocido."
 
@@ -126,11 +126,27 @@ async def process_component(payload: dict, token: str):
     elif custom_id in ("price_1", "price_2"):
         choice = int(custom_id[-1])
         response = await gm.choose_price(user_id, choice)
-    elif custom_id == "gacha_x10":
-        response = await gm.open_sobre_x10(user_id)
+    elif custom_id.startswith("gacha_x10:"):
+        owner_id = custom_id.split(":")[1]
+        if user_id != owner_id:
+            response = {"content": "❌ Solo el usuario que abrió el sobre puede usar este botón."}
+        else:
+            response = await gm.open_sobre_x10(user_id)
     elif custom_id.startswith("coleccion_page:"):
         page = int(custom_id.split(":")[1])
         response = await gm.get_collection(user_id, page)
+    elif custom_id.startswith("vender_confirmar:"):
+        owner_id = custom_id.split(":")[1]
+        if user_id != owner_id:
+            response = {"content": "❌ Solo el usuario que inició la venta puede confirmarla.", "components": []}
+        else:
+            response = await gm.confirm_sell_duplicates(user_id)
+    elif custom_id.startswith("vender_cancelar:"):
+        owner_id = custom_id.split(":")[1]
+        if user_id != owner_id:
+            response = {"content": "❌ Solo el usuario que inició la venta puede cancelarla.", "components": []}
+        else:
+            response = {"embeds": [{"title": "Venta cancelada.", "color": 0x9D9D9D}], "components": []}
     else:
         response = "Acción no reconocida."
 
@@ -282,7 +298,13 @@ async def interactions(request: Request, background_tasks: BackgroundTasks):
         custom_id = payload["data"]["custom_id"]
         background_tasks.add_task(process_component, payload, payload["token"])
         # Buttons that update in-place vs create a new message
-        updates_in_place = custom_id.startswith("price_") or custom_id.startswith("coleccion_")
+        updates_in_place = (
+            custom_id.startswith("price_") or
+            custom_id.startswith("coleccion_") or
+            custom_id.startswith("vender_confirmar:") or
+            custom_id.startswith("vender_cancelar:") or
+            custom_id.startswith("gacha_x10:")
+        )
         response_type = 6 if updates_in_place else 5
         return JSONResponse({"type": response_type})
 

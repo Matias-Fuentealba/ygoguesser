@@ -3,7 +3,7 @@ import requests
 from PIL import Image
 
 # Each level defines what fraction of the card is visible (crop size relative to full card)
-ZOOM_LEVELS = [0.15, 0.30, 0.55, 1.0]
+ZOOM_LEVELS = [0.15, 0.30, 0.55]
 OUTPUT_SIZE = (400, 400)
 
 
@@ -44,5 +44,5 @@ MAX_ZOOM_LEVEL = len(ZOOM_LEVELS) - 1
 
 
 def zoom_score(zoom_level: int) -> int:
-    scores = [100, 75, 50, 25]
+    scores = [100, 75, 50]
     return scores[zoom_level] if zoom_level < len(scores) else 0

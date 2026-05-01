@@ -15,6 +15,10 @@ GUILD_ID = "916429226171826236"
 
 COMMANDS = [
     {
+        "name": "help",
+        "description": "Muestra todos los comandos disponibles.",
+    },
+    {
         "name": "jugar",
         "description": "Inicia una nueva partida de YGOGuesser.",
     },
@@ -25,18 +29,6 @@ COMMANDS = [
     {
         "name": "adivinar",
         "description": "Intenta adivinar el nombre de la carta.",
-        "options": [
-            {
-                "name": "carta",
-                "description": "Nombre de la carta que quieres adivinar",
-                "type": 3,
-                "required": True,
-            }
-        ],
-    },
-    {
-        "name": "adivinar-zoom",
-        "description": "Intenta adivinar la carta en el modo zoom.",
         "options": [
             {
                 "name": "carta",
@@ -70,14 +62,30 @@ COMMANDS = [
         "name": "gacha",
         "description": "Info del banner actual: probabilidades, pool de cartas y cómo funciona.",
     },
+    {
+        "name": "vender",
+        "description": "Vende tus cartas duplicadas a cambio de monedas.",
+    },
 ]
 
-url = f"https://discord.com/api/v10/applications/{APPLICATION_ID}/guilds/{GUILD_ID}/commands"
 headers = {"Authorization": f"Bot {BOT_TOKEN}"}
 
-resp = requests.put(url, headers=headers, json=COMMANDS)
+# Guild (instantáneo, para testing)
+guild_url = f"https://discord.com/api/v10/applications/{APPLICATION_ID}/guilds/{GUILD_ID}/commands"
+resp = requests.put(guild_url, headers=headers, json=COMMANDS)
+print(f"Guild ({GUILD_ID}):")
 if resp.status_code == 200:
     for cmd in resp.json():
-        print(f"✅ /{cmd['name']}")
+        print(f"  ✅ /{cmd['name']}")
 else:
-    print(f"❌ Error {resp.status_code}: {resp.text}")
+    print(f"  ❌ Error {resp.status_code}: {resp.text}")
+
+# Global (hasta 1h para propagar a todos los servers)
+global_url = f"https://discord.com/api/v10/applications/{APPLICATION_ID}/commands"
+resp = requests.put(global_url, headers=headers, json=COMMANDS)
+print(f"\nGlobal:")
+if resp.status_code == 200:
+    for cmd in resp.json():
+        print(f"  ✅ /{cmd['name']}")
+else:
+    print(f"  ❌ Error {resp.status_code}: {resp.text}")

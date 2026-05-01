@@ -10,6 +10,8 @@ from game.gacha import (
     RARITY_EMOJIS, RARITY_COLORS, COOLDOWN_HOURS,
 )
 
+RARITY_SELL_VALUES = {"secret": 50, "ultra": 20, "super": 10, "rare": 5, "common": 1}
+
 MAX_HINTS = 5
 
 
@@ -122,6 +124,14 @@ class GameManager:
             f"💡 Pista {next_index + 1}/{MAX_HINTS}:\n{hints[next_index]}\n\n"
             f"Acertar ahora vale **{score_if_correct} puntos**."
         )
+
+    async def guess(self, user_id: str, username: str, guess: str):
+        game = self.db.get_active_game(user_id)
+        if not game:
+            return "No tienes una partida activa. Usa `/jugar` para empezar."
+        if game.get("game_mode") == "zoom":
+            return await self.guess_zoom(user_id, username, guess)
+        return await self.make_guess(user_id, username, guess)
 
     async def make_guess(self, user_id: str, username: str, guess: str) -> str:
         game = self.db.get_active_game(user_id)
@@ -383,11 +393,11 @@ class GameManager:
             "components": [],
         }
 
-    def _x10_button(self) -> list:
+    def _x10_button(self, user_id: str = "") -> list:
         return [{
             "type": 1,
             "components": [
-                {"type": 2, "style": 1, "label": f"🎴 x10 ({X10_COST} monedas)", "custom_id": "gacha_x10"},
+                {"type": 2, "style": 1, "label": f"🎴 x10 ({X10_COST} monedas)", "custom_id": f"gacha_x10:{user_id}"},
             ],
         }]
 
@@ -416,14 +426,14 @@ class GameManager:
                         f"⏳ Tu próximo sobre gratis estará disponible en **{mins}m {secs}s**.\n"
                         f"💰 Tienes **{coins} monedas** disponibles.{coins_hint}"
                     ),
-                    "components": self._x10_button(),
+                    "components": self._x10_button(user_id),
                 }
 
         cards = pull_free(DUEL_MONSTERS_BANNER)
         self.db.add_to_collection(user_id, cards)
         self.db.set_last_sobre(user_id)
 
-        return self._build_pull_response(cards, f"🎴 ¡Abriste un sobre! — {DUEL_MONSTERS_BANNER['name']}")
+        return self._build_pull_response(cards, f"🎴 ¡Abriste un sobre! — {DUEL_MONSTERS_BANNER['name']}", user_id)
 
     async def open_sobre_x10(self, user_id: str) -> dict:
         user = self.db.get_user(user_id)
@@ -441,11 +451,11 @@ class GameManager:
         self.db.add_to_collection(user_id, cards)
 
         new_balance = coins - X10_COST
-        result = self._build_pull_response(cards, f"🎴 ¡Abriste 10 sobres! — {DUEL_MONSTERS_BANNER['name']}")
+        result = self._build_pull_response(cards, f"🎴 ¡Abriste 10 sobres! — {DUEL_MONSTERS_BANNER['name']}", user_id)
         result["embeds"][0]["footer"] = {"text": f"💰 Monedas restantes: {new_balance}"}
         return result
 
-    def _build_pull_response(self, cards: list[dict], header: str) -> dict:
+    def _build_pull_response(self, cards: list[dict], header: str, user_id: str = "") -> dict:
         rarity_order = ["secret", "ultra", "super", "rare", "common"]
         rarity_names = {"secret": "Secret Rare", "ultra": "Ultra Rare", "super": "Super Rare", "rare": "Rare", "common": "Common"}
         cards_sorted = sorted(cards, key=lambda x: rarity_order.index(x["rarity"]))
@@ -467,7 +477,108 @@ class GameManager:
                 "fields": fields,
                 "color": RARITY_COLORS[best["rarity"]],
             }],
-            "components": self._x10_button(),
+            "components": self._x10_button(user_id),
+        }
+
+    async def show_sell_duplicates(self, user_id: str) -> dict:
+        cards = self.db.get_collection(user_id)
+        duplicates = [c for c in cards if c["count"] > 1]
+        if not duplicates:
+            return {"content": "No tienes cartas duplicadas para vender."}
+
+        rarity_order = ["secret", "ultra", "super", "rare", "common"]
+        rarity_names = {"secret": "Secret Rare", "ultra": "Ultra Rare", "super": "Super Rare", "rare": "Rare", "common": "Common"}
+        duplicates_sorted = sorted(duplicates, key=lambda x: (rarity_order.index(x["rarity"]), x["card_name"]))
+
+        total_extras = sum(c["count"] - 1 for c in duplicates_sorted)
+        total_coins = sum((c["count"] - 1) * RARITY_SELL_VALUES[c["rarity"]] for c in duplicates_sorted)
+
+        fields = []
+        for c in duplicates_sorted:
+            extras = c["count"] - 1
+            coins = extras * RARITY_SELL_VALUES[c["rarity"]]
+            fields.append({
+                "name": f"{RARITY_EMOJIS[c['rarity']]} {c['card_name']}",
+                "value": f"×{extras} → {coins} 💰",
+                "inline": True,
+            })
+
+        return {
+            "embeds": [{
+                "title": f"🗑️ Vender duplicadas — {total_extras} copias → {total_coins} monedas",
+                "description": (
+                    f"◻️ Common ×1 = **{RARITY_SELL_VALUES['common']}** 💰  "
+                    f"🔹 Rare ×1 = **{RARITY_SELL_VALUES['rare']}** 💰  "
+                    f"⭐ Super ×1 = **{RARITY_SELL_VALUES['super']}** 💰  "
+                    f"⭐⭐ Ultra ×1 = **{RARITY_SELL_VALUES['ultra']}** 💰  "
+                    f"✨✨✨ Secret ×1 = **{RARITY_SELL_VALUES['secret']}** 💰"
+                ),
+                "fields": fields,
+                "color": 0xE74C3C,
+            }],
+            "components": [{
+                "type": 1,
+                "components": [
+                    {"type": 2, "style": 4, "label": f"🗑️ Confirmar venta ({total_coins} monedas)", "custom_id": f"vender_confirmar:{user_id}"},
+                    {"type": 2, "style": 2, "label": "Cancelar", "custom_id": f"vender_cancelar:{user_id}"},
+                ],
+            }],
+        }
+
+    async def confirm_sell_duplicates(self, user_id: str) -> dict:
+        coins_earned = self.db.sell_duplicates(user_id, RARITY_SELL_VALUES)
+        if coins_earned == 0:
+            return {"embeds": [{"title": "No había duplicadas para vender.", "color": 0x9D9D9D}], "components": []}
+        user = self.db.get_user(user_id)
+        new_balance = user.get("coins_balance") or 0
+        return {
+            "embeds": [{
+                "title": f"✅ Vendiste tus duplicadas",
+                "description": f"Ganaste **{coins_earned} monedas** 💰\nSaldo actual: **{new_balance} monedas**",
+                "color": 0x2ECC71,
+            }],
+            "components": [],
+        }
+
+    async def get_help(self) -> dict:
+        return {
+            "embeds": [{
+                "title": "📖 Comandos de YGOGuesser",
+                "color": 0x3498DB,
+                "fields": [
+                    {
+                        "name": "🎮 Juego",
+                        "value": (
+                            "`/jugar` — Inicia una partida (elige modo)\n"
+                            "`/adivinar carta:<nombre>` — Adivina la carta actual\n"
+                            "`/pista` — Revela la siguiente pista (modo Pistas)\n"
+                            "`/zoom-pista` — Avanza al siguiente zoom (modo Zoom)\n"
+                            "`/rendirse` — Abandona la partida actual\n"
+                            "`/ranking` — Top 10 de jugadores"
+                        ),
+                        "inline": False,
+                    },
+                    {
+                        "name": "🎴 Gacha",
+                        "value": (
+                            "`/sobre` — Abre un sobre gratis (1 vez por hora)\n"
+                            "`/coleccion` — Ve tus cartas conseguidas\n"
+                            "`/vender` — Vende tus cartas duplicadas por monedas\n"
+                            "`/gacha` — Info del banner actual y probabilidades"
+                        ),
+                        "inline": False,
+                    },
+                    {
+                        "name": "💰 Monedas",
+                        "value": (
+                            "Ganas monedas jugando partidas — son los mismos puntos del ranking "
+                            "pero se guardan por separado. Gastarlas **no baja tu posición**."
+                        ),
+                        "inline": False,
+                    },
+                ],
+                "footer": {"text": "YGOGuesser • ygoguesser.vercel.app"},
+            }]
         }
 
     async def get_gacha_info(self) -> dict:
