@@ -493,26 +493,25 @@ class GameManager:
         total_extras = sum(c["count"] - 1 for c in duplicates_sorted)
         total_coins = sum((c["count"] - 1) * RARITY_SELL_VALUES[c["rarity"]] for c in duplicates_sorted)
 
-        fields = []
+        # Agrupar por rareza (máximo 5 fields, evita el límite de 25 de Discord)
+        grouped: dict[str, list[str]] = {r: [] for r in rarity_order}
         for c in duplicates_sorted:
             extras = c["count"] - 1
             coins = extras * RARITY_SELL_VALUES[c["rarity"]]
-            fields.append({
-                "name": f"{RARITY_EMOJIS[c['rarity']]} {c['card_name']}",
-                "value": f"×{extras} → {coins} 💰",
-                "inline": True,
-            })
+            grouped[c["rarity"]].append(f"{c['card_name']} ×{extras} → {coins} 💰")
+
+        fields = []
+        for r in rarity_order:
+            if grouped[r]:
+                fields.append({
+                    "name": f"{RARITY_EMOJIS[r]} {rarity_names[r]} ({RARITY_SELL_VALUES[r]} 💰/copia)",
+                    "value": "\n".join(grouped[r]),
+                    "inline": False,
+                })
 
         return {
             "embeds": [{
-                "title": f"🗑️ Vender duplicadas — {total_extras} copias → {total_coins} monedas",
-                "description": (
-                    f"◻️ Common ×1 = **{RARITY_SELL_VALUES['common']}** 💰  "
-                    f"🔹 Rare ×1 = **{RARITY_SELL_VALUES['rare']}** 💰  "
-                    f"⭐ Super ×1 = **{RARITY_SELL_VALUES['super']}** 💰  "
-                    f"⭐⭐ Ultra ×1 = **{RARITY_SELL_VALUES['ultra']}** 💰  "
-                    f"✨✨✨ Secret ×1 = **{RARITY_SELL_VALUES['secret']}** 💰"
-                ),
+                "title": f"🗑️ Vender duplicadas — {total_extras} copias extra → {total_coins} monedas",
                 "fields": fields,
                 "color": 0xE74C3C,
             }],
