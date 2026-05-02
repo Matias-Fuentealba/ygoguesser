@@ -77,32 +77,35 @@ async def process_command(payload: dict, token: str):
     db = Database()
     gm = GameManager(db)
 
-    if command == "jugar":
-        response = await gm.start_game(user_id, username)
-    elif command == "pista":
-        response = await gm.get_hint(user_id)
-    elif command == "adivinar":
-        options = payload["data"].get("options", [])
-        guess = options[0]["value"] if options else ""
-        response = await gm.guess(user_id, username, guess)
-    elif command == "zoom-pista":
-        response = await gm.next_zoom(user_id)
-    elif command == "rendirse":
-        response = await gm.surrender(user_id)
-    elif command == "ranking":
-        response = await gm.get_ranking()
-    elif command == "sobre":
-        response = await gm.open_sobre(user_id, username)
-    elif command == "coleccion":
-        response = await gm.get_collection(user_id)
-    elif command == "gacha":
-        response = await gm.get_gacha_info()
-    elif command == "vender":
-        response = await gm.show_sell_duplicates(user_id)
-    elif command == "help":
-        response = await gm.get_help()
-    else:
-        response = "Comando no reconocido."
+    try:
+        if command == "jugar":
+            response = await gm.start_game(user_id, username)
+        elif command == "pista":
+            response = await gm.get_hint(user_id)
+        elif command == "adivinar":
+            options = payload["data"].get("options", [])
+            guess = options[0]["value"] if options else ""
+            response = await gm.guess(user_id, username, guess)
+        elif command == "zoom-pista":
+            response = await gm.next_zoom(user_id)
+        elif command == "rendirse":
+            response = await gm.surrender(user_id)
+        elif command == "ranking":
+            response = await gm.get_ranking()
+        elif command == "sobre":
+            response = await gm.open_sobre(user_id, username)
+        elif command == "coleccion":
+            response = await gm.get_collection(user_id)
+        elif command == "gacha":
+            response = await gm.get_gacha_info()
+        elif command == "vender":
+            response = await gm.show_sell_duplicates(user_id)
+        elif command == "help":
+            response = await gm.get_help()
+        else:
+            response = "Comando no reconocido."
+    except Exception as e:
+        response = f"⚠️ Error interno: `{type(e).__name__}: {e}`"
 
     await send_followup(token, response)
 
@@ -117,38 +120,41 @@ async def process_component(payload: dict, token: str):
     db = Database()
     gm = GameManager(db)
 
-    if custom_id == "mode_hints":
-        response = await gm.start_hints_game(user_id, username)
-    elif custom_id == "mode_zoom":
-        response = await gm.start_zoom(user_id, username)
-    elif custom_id == "mode_price":
-        response = await gm.start_price_game(user_id, username)
-    elif custom_id in ("price_1", "price_2"):
-        choice = int(custom_id[-1])
-        response = await gm.choose_price(user_id, choice)
-    elif custom_id.startswith("gacha_x10:"):
-        owner_id = custom_id.split(":")[1]
-        if user_id != owner_id:
-            response = {"content": "❌ Solo el usuario que abrió el sobre puede usar este botón."}
+    try:
+        if custom_id == "mode_hints":
+            response = await gm.start_hints_game(user_id, username)
+        elif custom_id == "mode_zoom":
+            response = await gm.start_zoom(user_id, username)
+        elif custom_id == "mode_price":
+            response = await gm.start_price_game(user_id, username)
+        elif custom_id in ("price_1", "price_2"):
+            choice = int(custom_id[-1])
+            response = await gm.choose_price(user_id, choice)
+        elif custom_id.startswith("gacha_x10:"):
+            owner_id = custom_id.split(":")[1]
+            if user_id != owner_id:
+                response = {"content": "❌ Solo el usuario que abrió el sobre puede usar este botón."}
+            else:
+                response = await gm.open_sobre_x10(user_id)
+        elif custom_id.startswith("coleccion_page:"):
+            page = int(custom_id.split(":")[1])
+            response = await gm.get_collection(user_id, page)
+        elif custom_id.startswith("vender_confirmar:"):
+            owner_id = custom_id.split(":")[1]
+            if user_id != owner_id:
+                response = {"content": "❌ Solo el usuario que inició la venta puede confirmarla.", "components": []}
+            else:
+                response = await gm.confirm_sell_duplicates(user_id)
+        elif custom_id.startswith("vender_cancelar:"):
+            owner_id = custom_id.split(":")[1]
+            if user_id != owner_id:
+                response = {"content": "❌ Solo el usuario que inició la venta puede cancelarla.", "components": []}
+            else:
+                response = {"embeds": [{"title": "Venta cancelada.", "color": 0x9D9D9D}], "components": []}
         else:
-            response = await gm.open_sobre_x10(user_id)
-    elif custom_id.startswith("coleccion_page:"):
-        page = int(custom_id.split(":")[1])
-        response = await gm.get_collection(user_id, page)
-    elif custom_id.startswith("vender_confirmar:"):
-        owner_id = custom_id.split(":")[1]
-        if user_id != owner_id:
-            response = {"content": "❌ Solo el usuario que inició la venta puede confirmarla.", "components": []}
-        else:
-            response = await gm.confirm_sell_duplicates(user_id)
-    elif custom_id.startswith("vender_cancelar:"):
-        owner_id = custom_id.split(":")[1]
-        if user_id != owner_id:
-            response = {"content": "❌ Solo el usuario que inició la venta puede cancelarla.", "components": []}
-        else:
-            response = {"embeds": [{"title": "Venta cancelada.", "color": 0x9D9D9D}], "components": []}
-    else:
-        response = "Acción no reconocida."
+            response = "Acción no reconocida."
+    except Exception as e:
+        response = f"⚠️ Error interno: `{type(e).__name__}: {e}`"
 
     await send_followup(token, response)
 
