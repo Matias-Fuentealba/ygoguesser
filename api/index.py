@@ -57,14 +57,20 @@ async def send_followup(token: str, response: str | dict):
 
         # Response with embeds dict (hints mode win/lose)
         elif isinstance(response, dict) and response.get("embeds"):
-            await client.patch(url, json=response)
+            r = await client.patch(url, json=response)
+            if r.status_code >= 400:
+                print(f"[Discord 400] payload={response}\nresponse={r.text}")
 
         # Plain text or simple dict with content (and optional components)
         elif isinstance(response, dict):
-            await client.patch(url, json=response)
+            r = await client.patch(url, json=response)
+            if r.status_code >= 400:
+                print(f"[Discord 400] payload={response}\nresponse={r.text}")
 
         else:
-            await client.patch(url, json={"content": response})
+            r = await client.patch(url, json={"content": response})
+            if r.status_code >= 400:
+                print(f"[Discord 400] payload={{'content': {response}}}\nresponse={r.text}")
 
 
 async def process_command(payload: dict, token: str):
