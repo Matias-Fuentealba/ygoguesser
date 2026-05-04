@@ -18,7 +18,7 @@ BASE_URL = "https://db.ygoprodeck.com/api/v7/cardinfo.php"
 
 def fetch_card_for_price(exclude_names: set = None) -> dict | None:
     try:
-        offset = random.randint(0, 800)
+        offset = random.randint(0, 10000)
         resp = requests.get(
             BASE_URL,
             params={"num": 20, "offset": offset},
@@ -31,17 +31,20 @@ def fetch_card_for_price(exclude_names: set = None) -> dict | None:
         for card in cards:
             if exclude_names and card["name"] in exclude_names:
                 continue
-            prices = card.get("card_prices", [{}])[0]
-            price = float(prices.get("tcgplayer_price") or 0)
-            if price > 0:
-                valid.append((card, price))
+            sets_with_price = [
+                s for s in card.get("card_sets", [])
+                if float(s.get("set_price") or 0) > 0
+            ]
+            if not sets_with_price:
+                continue
+            set_info = random.choice(sets_with_price)
+            price = float(set_info["set_price"])
+            valid.append((card, price, set_info))
 
         if not valid:
             return None
 
-        card, price = random.choice(valid)
-        sets = card.get("card_sets", [])
-        set_info = random.choice(sets) if sets else {}
+        card, price, set_info = random.choice(valid)
         return {
             "name": card["name"],
             "image_url": card["card_images"][0]["image_url"] if card.get("card_images") else "",
