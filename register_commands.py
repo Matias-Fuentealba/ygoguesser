@@ -66,6 +66,35 @@ COMMANDS = [
         "name": "vender",
         "description": "Vende tus cartas duplicadas a cambio de monedas.",
     },
+    {
+        "name": "config",
+        "description": "Configura restricciones de canal para los comandos (solo admins).",
+        "options": [
+            {
+                "name": "accion",
+                "description": "Acción a realizar",
+                "type": 3,
+                "required": True,
+                "choices": [
+                    {"name": "lockear", "value": "lockear"},
+                    {"name": "desbloquear", "value": "desbloquear"},
+                    {"name": "ver", "value": "ver"},
+                ],
+            },
+            {
+                "name": "comando",
+                "description": "Nombre del comando a configurar",
+                "type": 3,
+                "required": False,
+            },
+            {
+                "name": "canal",
+                "description": "Canal donde se permitirá el comando",
+                "type": 7,
+                "required": False,
+            },
+        ],
+    },
 ]
 
 headers = {"Authorization": f"Bot {BOT_TOKEN}"}

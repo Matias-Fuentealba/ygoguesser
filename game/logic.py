@@ -6,9 +6,11 @@ from game.yugioh import fetch_random_card, build_hints, fetch_card_for_price
 from game.zoom import get_zoomed_image, zoom_score, MAX_ZOOM_LEVEL
 from game.gacha import (
     pull_free, pull_x10,
-    DUEL_MONSTERS_BANNER, X10_COST,
+    PERMANENT_BANNER, ROTATING_BANNER, X10_COST,
     RARITY_EMOJIS, RARITY_COLORS, COOLDOWN_HOURS,
 )
+
+ALL_BANNERS = {"permanent": PERMANENT_BANNER, "rotating": ROTATING_BANNER}
 
 RARITY_SELL_VALUES = {"secret": 50, "ultra": 20, "super": 10, "rare": 5, "common": 1}
 
@@ -393,49 +395,72 @@ class GameManager:
             "components": [],
         }
 
-    def _x10_button(self, user_id: str = "") -> list:
+    def _x10_buttons(self, user_id: str = "") -> list:
         return [{
             "type": 1,
             "components": [
-                {"type": 2, "style": 1, "label": f"🎴 x10 ({X10_COST} monedas)", "custom_id": f"gacha_x10:{user_id}"},
+                {"type": 2, "style": 1, "label": f"x10 Original Legends ({X10_COST}💰)", "custom_id": f"gacha_x10:{user_id}:permanent"},
+                {"type": 2, "style": 2, "label": f"x10 Next Generation ({X10_COST}💰)", "custom_id": f"gacha_x10:{user_id}:rotating"},
             ],
         }]
+
+    def _cooldown_check(self, user: dict):
+        """Returns (blocked, mins, secs) tuple."""
+        last_raw = (user or {}).get("last_sobre")
+        if not last_raw:
+            return False, 0, 0
+        last_dt = datetime.fromisoformat(last_raw)
+        if last_dt.tzinfo is None:
+            last_dt = last_dt.replace(tzinfo=timezone.utc)
+        now = datetime.now(timezone.utc)
+        same_hour = (last_dt.year == now.year and last_dt.month == now.month
+                     and last_dt.day == now.day and last_dt.hour == now.hour)
+        if not same_hour:
+            return False, 0, 0
+        next_hour = now.replace(minute=0, second=0, microsecond=0) + timedelta(hours=1)
+        time_left = next_hour - now
+        return True, int(time_left.total_seconds() // 60), int(time_left.total_seconds() % 60)
 
     async def open_sobre(self, user_id: str, username: str) -> dict:
         self.db.upsert_user(user_id, username)
         user = self.db.get_user(user_id)
         coins = (user.get("coins_balance") or 0) if user else 0
 
-        last_raw = (user or {}).get("last_sobre")
-        if last_raw:
-            last_dt = datetime.fromisoformat(last_raw)
-            if last_dt.tzinfo is None:
-                last_dt = last_dt.replace(tzinfo=timezone.utc)
-            now = datetime.now(timezone.utc)
-            # Cooldown hasta el próximo cambio de hora en punto
-            same_hour = last_dt.year == now.year and last_dt.month == now.month \
-                        and last_dt.day == now.day and last_dt.hour == now.hour
-            if same_hour:
-                next_hour = now.replace(minute=0, second=0, microsecond=0) + timedelta(hours=1)
-                time_left = next_hour - now
-                mins = int(time_left.total_seconds() // 60)
-                secs = int(time_left.total_seconds() % 60)
-                coins_hint = "" if coins > 0 else "\n> 💡 Gana monedas jugando partidas con `/jugar`."
-                return {
-                    "content": (
-                        f"⏳ Tu próximo sobre gratis estará disponible en **{mins}m {secs}s**.\n"
-                        f"💰 Tienes **{coins} monedas** disponibles.{coins_hint}"
-                    ),
-                    "components": self._x10_button(user_id),
-                }
+        blocked, mins, secs = self._cooldown_check(user)
+        if blocked:
+            coins_hint = "" if coins > 0 else "\n> 💡 Gana monedas jugando partidas con `/jugar`."
+            return {
+                "content": (
+                    f"⏳ Tu próximo sobre gratis estará disponible en **{mins}m {secs}s**.\n"
+                    f"💰 Tienes **{coins} monedas** disponibles.{coins_hint}"
+                ),
+                "components": self._x10_buttons(user_id),
+            }
 
-        cards = pull_free(DUEL_MONSTERS_BANNER)
+        return {
+            "content": f"🎴 **¡Sobre disponible!** ¿De qué banner querés tirar?\n💰 Tienes **{coins} monedas** disponibles.",
+            "components": [{
+                "type": 1,
+                "components": [
+                    {"type": 2, "style": 1, "label": "✨ Original Legends", "custom_id": f"sobre_banner:permanent:{user_id}"},
+                    {"type": 2, "style": 2, "label": "🆕 Next Generation", "custom_id": f"sobre_banner:rotating:{user_id}"},
+                ],
+            }],
+        }
+
+    async def open_sobre_banner(self, user_id: str, username: str, banner_key: str) -> dict:
+        user = self.db.get_user(user_id)
+        blocked, mins, secs = self._cooldown_check(user)
+        if blocked:
+            return {"content": f"⏳ El sobre ya fue usado. Próximo disponible en **{mins}m {secs}s**.", "components": []}
+
+        banner = ALL_BANNERS.get(banner_key, PERMANENT_BANNER)
+        cards = pull_free(banner)
         self.db.add_to_collection(user_id, cards)
         self.db.set_last_sobre(user_id)
+        return self._build_pull_response(cards, f"🎴 ¡Abriste un sobre! — {banner['name']}", user_id, banner_key)
 
-        return self._build_pull_response(cards, f"🎴 ¡Abriste un sobre! — {DUEL_MONSTERS_BANNER['name']}", user_id)
-
-    async def open_sobre_x10(self, user_id: str) -> dict:
+    async def open_sobre_x10(self, user_id: str, banner_key: str = "permanent") -> dict:
         user = self.db.get_user(user_id)
         if not user:
             return {"content": "Primero usa `/sobre` para registrarte."}
@@ -447,26 +472,23 @@ class GameManager:
         if not self.db.spend_coins(user_id, X10_COST):
             return {"content": "❌ No tienes suficientes monedas."}
 
-        cards = pull_x10(DUEL_MONSTERS_BANNER)
+        banner = ALL_BANNERS.get(banner_key, PERMANENT_BANNER)
+        cards = pull_x10(banner)
         self.db.add_to_collection(user_id, cards)
 
         new_balance = coins - X10_COST
-        result = self._build_pull_response(cards, f"🎴 ¡Abriste 10 sobres! — {DUEL_MONSTERS_BANNER['name']}", user_id)
+        result = self._build_pull_response(cards, f"🎴 ¡Abriste 10 sobres! — {banner['name']}", user_id, banner_key)
         result["embeds"][0]["footer"] = {"text": f"💰 Monedas restantes: {new_balance}"}
         return result
 
-    def _build_pull_response(self, cards: list[dict], header: str, user_id: str = "") -> dict:
+    def _build_pull_response(self, cards: list[dict], header: str, user_id: str = "", banner_key: str = "permanent") -> dict:
         rarity_order = ["secret", "ultra", "super", "rare", "common"]
         rarity_names = {"secret": "Secret Rare", "ultra": "Ultra Rare", "super": "Super Rare", "rare": "Rare", "common": "Common"}
         cards_sorted = sorted(cards, key=lambda x: rarity_order.index(x["rarity"]))
 
         best = cards_sorted[0]
         fields = [
-            {
-                "name": f"{RARITY_EMOJIS[c['rarity']]} {c['name']}",
-                "value": rarity_names[c["rarity"]],
-                "inline": True,
-            }
+            {"name": f"{RARITY_EMOJIS[c['rarity']]} {c['name']}", "value": rarity_names[c["rarity"]], "inline": True}
             for c in cards_sorted
         ]
 
@@ -477,7 +499,7 @@ class GameManager:
                 "fields": fields,
                 "color": RARITY_COLORS[best["rarity"]],
             }],
-            "components": self._x10_button(user_id),
+            "components": self._x10_buttons(user_id),
         }
 
     async def show_sell_duplicates(self, user_id: str) -> dict:
@@ -581,36 +603,42 @@ class GameManager:
         }
 
     async def get_gacha_info(self) -> dict:
-        banner = DUEL_MONSTERS_BANNER
-        pool_sizes = {r: len(banner.get(r, [])) for r in ("secret", "ultra", "super", "rare", "common")}
         rarity_names = {"secret": "Secret Rare", "ultra": "Ultra Rare", "super": "Super Rare", "rare": "Rare", "common": "Common"}
-        pool_lines = "  ".join(
-            f"{RARITY_EMOJIS[r]} {rarity_names[r]}: {pool_sizes[r]} cartas"
-            for r in ("secret", "ultra", "super", "rare", "common")
-        )
 
-        embed = {
-            "title": f"🎴 Banner: {banner['name']}",
-            "description": (
-                "**¿Cómo funciona?**\n"
-                "Ganas **monedas** jugando — son los mismos puntos del ranking pero se guardan por separado, así que gastarlas no baja tu posición.\n\n"
-                f"🆓 **`/sobre`** — Sobre gratis de 5 cartas cada **1 hora**\n"
-                f"💰 **Botón x10** — 10 cartas por **{X10_COST} monedas**, garantiza al menos 1 Ultra Rare\n\n"
-                "**Probabilidades:**\n"
-                f"{RARITY_EMOJIS['secret']} Secret Rare — 1%\n"
-                f"{RARITY_EMOJIS['ultra']} Ultra Rare — 4%\n"
-                f"{RARITY_EMOJIS['super']} Super Rare — 15%\n"
-                f"{RARITY_EMOJIS['rare']} Rare — 30%\n"
-                f"{RARITY_EMOJIS['common']} Common — 50%\n\n"
-                f"**Pool del banner:**\n{pool_lines}\n\n"
-                "🔗 [Ver todas las cartas del pool](https://ygoguesser.vercel.app/banner)"
-            ),
-            "color": 0xFFD700,
-        }
-        if banner.get("image_url"):
-            embed["image"] = {"url": banner["image_url"]}
+        def pool_line(banner: dict) -> str:
+            return "  ".join(
+                f"{RARITY_EMOJIS[r]} {rarity_names[r]}: {len(banner.get(r, []))}"
+                for r in ("secret", "ultra", "super", "rare", "common")
+            )
 
-        return {"embeds": [embed]}
+        embeds = []
+        for label, banner in [("🔄 Banner rotativo", ROTATING_BANNER), ("♾️ Banner permanente", PERMANENT_BANNER)]:
+            embed = {
+                "title": f"🎴 {label}: {banner['name']}",
+                "description": (
+                    f"**Probabilidades:**\n"
+                    f"{RARITY_EMOJIS['secret']} Secret Rare — 1%\n"
+                    f"{RARITY_EMOJIS['ultra']} Ultra Rare — 4%\n"
+                    f"{RARITY_EMOJIS['super']} Super Rare — 15%\n"
+                    f"{RARITY_EMOJIS['rare']} Rare — 30%\n"
+                    f"{RARITY_EMOJIS['common']} Common — 50%\n\n"
+                    f"**Pool:** {pool_line(banner)}"
+                ),
+                "color": 0xFFD700,
+            }
+            if banner.get("image_url"):
+                embed["image"] = {"url": banner["image_url"]}
+            embeds.append(embed)
+
+        embeds[0]["description"] = (
+            "**¿Cómo funciona?**\n"
+            "Ganas **monedas** jugando — se guardan por separado del ranking, gastarlas no baja tu posición.\n\n"
+            f"🆓 **`/sobre`** — 5 cartas gratis cada hora (elegís banner)\n"
+            f"💰 **x10** — 10 cartas por **{X10_COST} monedas**, garantiza al menos 1 Ultra Rare\n\n"
+            "🔗 [Ver todas las cartas del pool](https://ygoguesser.vercel.app/banner)\n\n"
+        ) + embeds[0]["description"]
+
+        return {"embeds": embeds}
 
     async def get_collection(self, user_id: str, page: int = 0) -> dict:
         cards = self.db.get_collection(user_id)
@@ -670,8 +698,9 @@ class GameManager:
         if mode == "collection":
             banner_card_ids = [
                 card["id"]
+                for banner in ALL_BANNERS.values()
                 for rarity in ("secret", "ultra", "super", "rare", "common")
-                for card in DUEL_MONSTERS_BANNER.get(rarity, [])
+                for card in banner.get(rarity, [])
             ]
             total = len(banner_card_ids)
             rows = self.db.get_collection_ranking(banner_card_ids)
@@ -683,7 +712,7 @@ class GameManager:
                 pct = round(row["unique_count"] / total * 100)
                 lines.append(f"{medal} **{row['username']}** — {row['unique_count']}/{total} ({pct}%)")
             return {
-                "embeds": [{"title": f"📦 Ranking Colección — {DUEL_MONSTERS_BANNER['name']}", "description": "\n".join(lines), "color": 0xFFD700, "footer": {"text": f"{total} cartas únicas en el pool"}}],
+                "embeds": [{"title": "📦 Ranking Colección — Todos los banners", "description": "\n".join(lines), "color": 0xFFD700, "footer": {"text": f"{total} cartas únicas en total"}}],
                 "components": self._ranking_buttons("collection"),
             }
 
@@ -699,3 +728,26 @@ class GameManager:
             "embeds": [{"title": "🏆 Ranking — Top 10 Puntos", "description": "\n".join(lines), "color": 0xF1C40F}],
             "components": self._ranking_buttons("score"),
         }
+
+    async def handle_config(self, guild_id: str, accion: str, command: str | None, channel_id: str | None) -> dict:
+        if accion == "ver":
+            locks = self.db.get_all_channel_locks(guild_id)
+            if not locks:
+                return {"content": "No hay comandos bloqueados a ningún canal."}
+            lines = [f"`/{r['command']}` → <#{r['channel_id']}>" for r in locks]
+            return {"embeds": [{"title": "🔒 Canales configurados", "description": "\n".join(lines), "color": 0x3498DB}]}
+
+        if not command:
+            return {"content": "❌ Debes especificar un comando."}
+
+        if accion == "lockear":
+            if not channel_id:
+                return {"content": "❌ Debes especificar un canal."}
+            self.db.set_command_channel(guild_id, command, channel_id)
+            return {"content": f"✅ `/{command}` ahora solo puede usarse en <#{channel_id}>."}
+
+        if accion == "desbloquear":
+            self.db.remove_command_channel(guild_id, command)
+            return {"content": f"✅ `/{command}` ya no tiene restricción de canal."}
+
+        return {"content": "❌ Acción no reconocida."}

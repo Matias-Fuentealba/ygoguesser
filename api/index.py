@@ -73,17 +73,29 @@ async def send_followup(token: str, response: str | dict):
                 print(f"[Discord 400] payload={{'content': {response}}}\nresponse={r.text}")
 
 
+UNLOCKED_COMMANDS = {"config", "help", "ranking"}
+
+
 async def process_command(payload: dict, token: str):
     command = payload["data"]["name"]
     member = payload.get("member") or {}
     user = member.get("user") or payload.get("user", {})
     user_id = user.get("id", "")
     username = user.get("username", "unknown")
+    guild_id = payload.get("guild_id", "")
+    channel_id = payload.get("channel_id", "")
 
     db = Database()
     gm = GameManager(db)
 
     try:
+        # Channel lock check
+        if command not in UNLOCKED_COMMANDS:
+            allowed = db.get_command_channel(guild_id, command)
+            if allowed and channel_id != allowed:
+                await send_followup(token, f"❌ `/{command}` solo puede usarse en <#{allowed}>.")
+                return
+
         if command == "jugar":
             response = await gm.start_game(user_id, username)
         elif command == "pista":
@@ -108,6 +120,15 @@ async def process_command(payload: dict, token: str):
             response = await gm.show_sell_duplicates(user_id)
         elif command == "help":
             response = await gm.get_help()
+        elif command == "config":
+            if not bool(int(member.get("permissions", "0")) & 0x8):
+                response = {"content": "❌ Solo los administradores pueden usar este comando."}
+            else:
+                options = {o["name"]: o["value"] for o in payload["data"].get("options", [])}
+                accion = options.get("accion", "ver")
+                cmd = options.get("comando")
+                ch = options.get("canal")
+                response = await gm.handle_config(guild_id, accion, cmd, ch)
         else:
             response = "Comando no reconocido."
     except Exception as e:

@@ -215,3 +215,33 @@ class Database:
             .execute()
         )
         return result.data
+
+    # ---------- channel locks ----------
+
+    def get_command_channel(self, guild_id: str, command: str) -> str | None:
+        result = (
+            self.client.table("channel_locks")
+            .select("channel_id")
+            .eq("guild_id", guild_id)
+            .eq("command", command)
+            .execute()
+        )
+        return result.data[0]["channel_id"] if result.data else None
+
+    def get_all_channel_locks(self, guild_id: str) -> list[dict]:
+        result = (
+            self.client.table("channel_locks")
+            .select("command, channel_id")
+            .eq("guild_id", guild_id)
+            .execute()
+        )
+        return result.data
+
+    def set_command_channel(self, guild_id: str, command: str, channel_id: str):
+        self.client.table("channel_locks").upsert(
+            {"guild_id": guild_id, "command": command, "channel_id": channel_id},
+            on_conflict="guild_id,command",
+        ).execute()
+
+    def remove_command_channel(self, guild_id: str, command: str):
+        self.client.table("channel_locks").delete().eq("guild_id", guild_id).eq("command", command).execute()
