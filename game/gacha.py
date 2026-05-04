@@ -116,7 +116,7 @@ DUEL_MONSTERS_BANNER = {
 
 GX_BANNER = {
     "name": "Next Generation",
-    "image_url": "",
+    "image_url": "https://i.imgur.com/b0lQLid.jpeg",
     "secret": [
         {"id": 1546123,  "name": "Cyber End Dragon"},
         {"id": 35809262, "name": "Elemental HERO Flame Wingman"},
