@@ -70,9 +70,10 @@ def _fetch_card_for_price_once(exclude_names: set = None) -> dict | None:
 def fetch_random_card() -> dict | None:
     monster_type = random.choice(MONSTER_TYPES)
     try:
+        offset = random.randint(0, 400)
         resp = requests.get(
             BASE_URL,
-            params={"type": monster_type, "num": 100, "offset": 0},
+            params={"type": monster_type, "num": 100, "offset": offset},
             timeout=5,
         )
         resp.raise_for_status()
