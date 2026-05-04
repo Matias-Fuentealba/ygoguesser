@@ -136,12 +136,21 @@ async def process_component(payload: dict, token: str):
         elif custom_id in ("price_1", "price_2"):
             choice = int(custom_id[-1])
             response = await gm.choose_price(user_id, choice)
+        elif custom_id.startswith("sobre_banner:"):
+            parts = custom_id.split(":")
+            banner_key, owner_id = parts[1], parts[2]
+            if user_id != owner_id:
+                response = {"content": "❌ Solo el usuario que usó `/sobre` puede elegir el banner.", "components": []}
+            else:
+                response = await gm.open_sobre_banner(user_id, username, banner_key)
         elif custom_id.startswith("gacha_x10:"):
-            owner_id = custom_id.split(":")[1]
+            parts = custom_id.split(":")
+            owner_id = parts[1]
+            banner_key = parts[2] if len(parts) > 2 else "permanent"
             if user_id != owner_id:
                 response = {"content": "❌ Solo el usuario que abrió el sobre puede usar este botón."}
             else:
-                response = await gm.open_sobre_x10(user_id)
+                response = await gm.open_sobre_x10(user_id, banner_key)
         elif custom_id.startswith("coleccion_page:"):
             page = int(custom_id.split(":")[1])
             response = await gm.get_collection(user_id, page)
@@ -229,63 +238,49 @@ async def privacy():
 
 @app.get("/banner", response_class=HTMLResponse)
 async def banner():
-    from game.gacha import DUEL_MONSTERS_BANNER, RARITY_EMOJIS
+    from game.gacha import PERMANENT_BANNER, ROTATING_BANNER, RARITY_EMOJIS
 
-    rarity_labels = {
-        "secret": "Secret Rare",
-        "ultra":  "Ultra Rare",
-        "super":  "Super Rare",
-        "rare":   "Rare",
-        "common": "Common",
-    }
-    rarity_colors = {
-        "secret": "#FFD700",
-        "ultra":  "#FFA500",
-        "super":  "#C0C0C0",
-        "rare":   "#0070DD",
-        "common": "#9D9D9D",
-    }
-
+    rarity_labels = {"secret": "Secret Rare", "ultra": "Ultra Rare", "super": "Super Rare", "rare": "Rare", "common": "Common"}
+    rarity_colors = {"secret": "#FFD700", "ultra": "#FFA500", "super": "#C0C0C0", "rare": "#0070DD", "common": "#9D9D9D"}
     rarity_probs = {"secret": "1%", "ultra": "4%", "super": "15%", "rare": "30%", "common": "50%"}
 
-    sections = ""
-    for rarity in ("secret", "ultra", "super", "rare", "common"):
-        cards = DUEL_MONSTERS_BANNER.get(rarity, [])
-        emoji = RARITY_EMOJIS[rarity]
-        label = rarity_labels[rarity]
-        color = rarity_colors[rarity]
-        prob = rarity_probs[rarity]
-        cards_html = "".join(
-            f"""<div style="text-align:center;width:120px">
-                  <img src="https://images.ygoprodeck.com/images/cards/{c['id']}.jpg"
-                       width="100" style="border-radius:6px;border:2px solid {color}">
-                  <div style="font-size:11px;margin-top:4px;color:#ddd">{c['name']}</div>
-                </div>"""
-            for c in cards
+    def build_banner_html(b: dict) -> str:
+        img_html = (
+            f'<img src="{b["image_url"]}" style="max-width:100%;border-radius:12px;margin-bottom:24px;display:block">'
+            if b.get("image_url") else ""
         )
-        sections += f"""
-        <div style="margin-bottom:32px">
-          <h2 style="color:{color};margin-bottom:4px">{emoji} {label} <span style="font-size:16px;color:#aaa">— {prob}</span></h2>
-          <p style="color:#888;margin:0 0 12px">{len(cards)} cartas en el pool</p>
-          <div style="display:flex;flex-wrap:wrap;gap:12px">{cards_html}</div>
-        </div>"""
+        sections = ""
+        for rarity in ("secret", "ultra", "super", "rare", "common"):
+            cards = b.get(rarity, [])
+            color = rarity_colors[rarity]
+            cards_html = "".join(
+                f"""<div style="text-align:center;width:120px">
+                      <img src="https://images.ygoprodeck.com/images/cards/{c['id']}.jpg"
+                           width="100" style="border-radius:6px;border:2px solid {color}">
+                      <div style="font-size:11px;margin-top:4px;color:#ddd">{c['name']}</div>
+                    </div>"""
+                for c in cards
+            )
+            sections += f"""
+            <div style="margin-bottom:32px">
+              <h3 style="color:{color};margin-bottom:4px">{RARITY_EMOJIS[rarity]} {rarity_labels[rarity]} <span style="font-size:14px;color:#aaa">— {rarity_probs[rarity]}</span></h3>
+              <p style="color:#888;margin:0 0 12px">{len(cards)} cartas en el pool</p>
+              <div style="display:flex;flex-wrap:wrap;gap:12px">{cards_html}</div>
+            </div>"""
+        return f"{img_html}{sections}"
 
-    banner_img = DUEL_MONSTERS_BANNER.get("image_url", "")
-    banner_img_html = (
-        f'<img src="{banner_img}" style="max-width:100%;border-radius:12px;margin-bottom:24px;display:block">'
-        if banner_img else ""
-    )
+    perm_html = build_banner_html(PERMANENT_BANNER)
+    rot_html = build_banner_html(ROTATING_BANNER)
 
     return f"""
     <html>
-    <head>
-      <title>YGOGuesser — Banner: {DUEL_MONSTERS_BANNER['name']}</title>
-      <meta charset="utf-8">
-    </head>
+    <head><title>YGOGuesser — Banners</title><meta charset="utf-8"></head>
     <body style="font-family:sans-serif;background:#1a1a2e;color:#eee;max-width:1000px;margin:40px auto;padding:0 20px">
-      <h1 style="color:#FFD700">🎴 Banner: {DUEL_MONSTERS_BANNER['name']}</h1>
-      {banner_img_html}
-      {sections}
+      <h1 style="color:#FFD700">🎴 {PERMANENT_BANNER['name']} <span style="font-size:16px;color:#aaa">— Banner permanente</span></h1>
+      {perm_html}
+      <hr style="border-color:#333;margin:48px 0">
+      <h1 style="color:#FFD700">🎴 {ROTATING_BANNER['name']} <span style="font-size:16px;color:#aaa">— Banner rotativo actual</span></h1>
+      {rot_html}
     </body>
     </html>
     """
@@ -319,7 +314,8 @@ async def interactions(request: Request, background_tasks: BackgroundTasks):
             custom_id.startswith("vender_confirmar:") or
             custom_id.startswith("vender_cancelar:") or
             custom_id.startswith("gacha_x10:") or
-            custom_id.startswith("ranking_mode:")
+            custom_id.startswith("ranking_mode:") or
+            custom_id.startswith("sobre_banner:")
         )
         response_type = 6 if updates_in_place else 5
         return JSONResponse({"type": response_type})
