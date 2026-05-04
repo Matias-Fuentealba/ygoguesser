@@ -16,7 +16,15 @@ EXTRA_DECK_TYPES = {"Fusion", "Synchro", "XYZ", "Link"}
 BASE_URL = "https://db.ygoprodeck.com/api/v7/cardinfo.php"
 
 
-def fetch_card_for_price(exclude_names: set = None) -> dict | None:
+def fetch_card_for_price(exclude_names: set = None, _retries: int = 5) -> dict | None:
+    for _ in range(_retries):
+        result = _fetch_card_for_price_once(exclude_names)
+        if result:
+            return result
+    return None
+
+
+def _fetch_card_for_price_once(exclude_names: set = None) -> dict | None:
     try:
         offset = random.randint(0, 10000)
         resp = requests.get(
@@ -54,6 +62,9 @@ def fetch_card_for_price(exclude_names: set = None) -> dict | None:
         }
     except Exception:
         return None
+
+
+
 
 
 def fetch_random_card() -> dict | None:
