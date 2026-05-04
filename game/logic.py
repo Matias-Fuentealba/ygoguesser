@@ -438,7 +438,7 @@ class GameManager:
             }
 
         return {
-            "content": f"🎴 **¡Sobre disponible!** ¿De qué banner querés tirar?\n💰 Tienes **{coins} monedas** disponibles.",
+            "content": f"🎴 **¡Sobre disponible!** ¿De qué banner quieres tirar?\n💰 Tienes **{coins} monedas** disponibles.",
             "components": [{
                 "type": 1,
                 "components": [
