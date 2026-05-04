@@ -655,22 +655,47 @@ class GameManager:
 
         return {"embeds": [embed], "components": [{"type": 1, "components": buttons}]}
 
-    async def get_ranking(self) -> str:
+    def _ranking_buttons(self, current: str) -> list:
+        return [{
+            "type": 1,
+            "components": [
+                {"type": 2, "style": 1 if current == "score" else 2, "label": "🏆 Puntos", "custom_id": "ranking_mode:score", "disabled": current == "score"},
+                {"type": 2, "style": 1 if current == "collection" else 2, "label": "📦 Colección", "custom_id": "ranking_mode:collection", "disabled": current == "collection"},
+            ],
+        }]
+
+    async def get_ranking(self, mode: str = "score") -> dict:
+        medals = ["🥇", "🥈", "🥉"]
+
+        if mode == "collection":
+            banner_card_ids = [
+                card["id"]
+                for rarity in ("secret", "ultra", "super", "rare", "common")
+                for card in DUEL_MONSTERS_BANNER.get(rarity, [])
+            ]
+            total = len(banner_card_ids)
+            rows = self.db.get_collection_ranking(banner_card_ids)
+            if not rows:
+                return {"content": "Todavía nadie tiene cartas.", "components": self._ranking_buttons("collection")}
+            lines = []
+            for i, row in enumerate(rows):
+                medal = medals[i] if i < 3 else f"{i + 1}."
+                pct = round(row["unique_count"] / total * 100)
+                lines.append(f"{medal} **{row['username']}** — {row['unique_count']}/{total} ({pct}%)")
+            return {
+                "embeds": [{"title": f"📦 Ranking Colección — {DUEL_MONSTERS_BANNER['name']}", "description": "\n".join(lines), "color": 0xFFD700, "footer": {"text": f"{total} cartas únicas en el pool"}}],
+                "components": self._ranking_buttons("collection"),
+            }
+
         rows = self.db.get_ranking()
         if not rows:
-            return "Todavía no hay partidas registradas."
-
-        lines = ["🏆 **Ranking — Top 10**\n"]
-        medals = ["🥇", "🥈", "🥉"]
+            return {"content": "Todavía no hay partidas registradas.", "components": self._ranking_buttons("score")}
+        lines = []
         for i, row in enumerate(rows):
             medal = medals[i] if i < 3 else f"{i + 1}."
-            win_rate = (
-                round(row["games_won"] / row["games_played"] * 100)
-                if row["games_played"] > 0 else 0
-            )
-            lines.append(
-                f"{medal} **{row['username']}** — {row['total_score']} pts "
-                f"({row['games_won']}/{row['games_played']} ganadas, {win_rate}% win rate)"
-            )
-
-        return "\n".join(lines)
+            win_rate = round(row["games_won"] / row["games_played"] * 100) if row["games_played"] > 0 else 0
+            lines.append(f"{medal} **{row['username']}** — {row['total_score']} pts ({row['games_won']}/{row['games_played']} ganadas, {win_rate}% win rate)")
+        return {
+            "embeds": [{"title": "🏆 Ranking — Top 10 Puntos", "description": "\n".join(lines), "color": 0xF1C40F}],
+            "components": self._ranking_buttons("score"),
+        }

@@ -157,6 +157,9 @@ async def process_component(payload: dict, token: str):
                 response = {"content": "❌ Solo el usuario que inició la venta puede cancelarla.", "components": []}
             else:
                 response = {"embeds": [{"title": "Venta cancelada.", "color": 0x9D9D9D}], "components": []}
+        elif custom_id.startswith("ranking_mode:"):
+            mode = custom_id.split(":")[1]
+            response = await gm.get_ranking(mode)
         else:
             response = "Acción no reconocida."
     except Exception as e:
@@ -315,7 +318,8 @@ async def interactions(request: Request, background_tasks: BackgroundTasks):
             custom_id.startswith("coleccion_") or
             custom_id.startswith("vender_confirmar:") or
             custom_id.startswith("vender_cancelar:") or
-            custom_id.startswith("gacha_x10:")
+            custom_id.startswith("gacha_x10:") or
+            custom_id.startswith("ranking_mode:")
         )
         response_type = 6 if updates_in_place else 5
         return JSONResponse({"type": response_type})

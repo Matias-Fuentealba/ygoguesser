@@ -50,6 +50,32 @@ class Database:
         )
         return result.data
 
+    def get_collection_ranking(self, banner_card_ids: list, limit: int = 10) -> list:
+        from collections import defaultdict
+        result = (
+            self.client.table("collection")
+            .select("discord_id, card_id")
+            .in_("card_id", banner_card_ids)
+            .execute()
+        )
+        counts = defaultdict(set)
+        for row in result.data:
+            counts[row["discord_id"]].add(row["card_id"])
+        if not counts:
+            return []
+        users = (
+            self.client.table("users")
+            .select("discord_id, username")
+            .in_("discord_id", list(counts.keys()))
+            .execute()
+        ).data
+        username_map = {u["discord_id"]: u["username"] for u in users}
+        ranking = [
+            {"username": username_map.get(did, "unknown"), "unique_count": len(cards)}
+            for did, cards in counts.items()
+        ]
+        return sorted(ranking, key=lambda x: x["unique_count"], reverse=True)[:limit]
+
     # ---------- games ----------
 
     def get_active_game(self, discord_id: str) -> dict | None:
