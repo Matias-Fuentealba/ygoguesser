@@ -121,7 +121,10 @@ class GameManager:
 
         self.db.reveal_hint(game["id"], next_index)
 
-        score_if_correct = calculate_score(next_index)
+        if game.get("game_mode") == "zoom":
+            score_if_correct = max(0, zoom_score(game["zoom_level"]) - next_index * 10)
+        else:
+            score_if_correct = calculate_score(next_index)
         return (
             f"💡 Pista {next_index + 1}/{MAX_HINTS}:\n{hints[next_index]}\n\n"
             f"Acertar ahora vale **{score_if_correct} puntos**."
@@ -193,8 +196,8 @@ class GameManager:
 
         if game_mode == "price":
             score = game["card_data"].get("score", 0)
-            self.db.add_score(user_id, score, won=False)
-            return f"🏳️ Abandonaste el modo precio. Puntaje final: **{score} puntos**."
+            self.db.add_score(user_id, score, won=False, coins=score * 5)
+            return f"🏳️ Abandonaste el modo precio. Puntaje final: **{score} puntos** · **{score * 5} monedas** 💰."
 
         card = game["card_data"]
         self.db.add_score(user_id, 0, won=False)
@@ -242,14 +245,16 @@ class GameManager:
         zoom_level = game["zoom_level"]
         attempts = game["attempts_on_hint"]
 
+        hints_revealed = game["hints_revealed"]
         if normalize_name(guess) == normalize_name(card["name"]):
-            score = zoom_score(zoom_level)
+            score = max(0, zoom_score(zoom_level) - hints_revealed * 10)
             self.db.end_game(game["id"], "won")
             self.db.add_score(user_id, score, won=True)
+            hints_note = f" · {hints_revealed} pista{'s' if hints_revealed != 1 else ''} usada{'s' if hints_revealed != 1 else ''}" if hints_revealed else ""
             return {
                 "content": (
                     f"✅ **¡Correcto!** La carta era **{card['name']}**.\n"
-                    f"🏆 Ganaste **{score} puntos** (zoom nivel {zoom_level + 1}/{MAX_ZOOM_LEVEL + 1})."
+                    f"🏆 Ganaste **{score} puntos** (zoom nivel {zoom_level + 1}/{MAX_ZOOM_LEVEL + 1}{hints_note})."
                 ),
                 "embed_image_url": card["image_url"],
                 "embed_color": 0x2ECC71,
@@ -294,7 +299,7 @@ class GameManager:
     async def next_zoom(self, user_id: str) -> dict:
         game = self.db.get_active_game(user_id)
         if not game or game.get("game_mode") != "zoom":
-            return {"content": "No tienes una partida de zoom activa. Usa `/zoom` para empezar."}
+            return {"content": "❌ `/zoom-pista` solo está disponible en modo Zoom. Usa `/jugar` para empezar."}
 
         zoom_level = game["zoom_level"]
         next_level = zoom_level + 1
@@ -361,32 +366,32 @@ class GameManager:
 
             if not new_champion:
                 self.db.end_game(game["id"], "won")
-                self.db.add_score(user_id, score, won=True)
-                return {"content": f"✅ ¡Correcto! No hay más cartas disponibles. Puntaje final: **{score} puntos**."}
+                self.db.add_score(user_id, score, won=True, coins=score * 5)
+                return {"content": f"✅ ¡Correcto! No hay más cartas disponibles. Puntaje final: **{score} puntos** · **{score * 5} monedas** 💰."}
 
             new_challenger = fetch_card_for_price(exclude_names={new_champion["name"]})
             if not new_challenger:
                 self.db.end_game(game["id"], "won")
-                self.db.add_score(user_id, score, won=True)
-                return {"content": f"✅ ¡Correcto! No hay más cartas disponibles. Puntaje final: **{score} puntos**."}
+                self.db.add_score(user_id, score, won=True, coins=score * 5)
+                return {"content": f"✅ ¡Correcto! No hay más cartas disponibles. Puntaje final: **{score} puntos** · **{score * 5} monedas** 💰."}
 
             state.update({"champion": new_champion, "challenger": new_challenger, "champion_wins": new_champion_wins, "score": score})
             self.db.update_game_data(game["id"], state)
 
             prefix = (
                 f"✅ ¡Correcto! **{correct_card['name']}** valía **${correct_card['price']:.2f}** "
-                f"vs **${wrong_card['price']:.2f}**.\n\n"
+                f"vs **${wrong_card['price']:.2f}** (+5 💰)\n\n"
             )
             return _build_price_message(new_champion, new_challenger, score, prefix=prefix)
 
         # Incorrecto — fin de partida
         self.db.end_game(game["id"], "lost")
-        self.db.add_score(user_id, score, won=False)
+        self.db.add_score(user_id, score, won=False, coins=score * 5)
         return {
             "content": (
                 f"❌ **Incorrecto.** La más cara era **{correct_card['name']}** "
                 f"con **${correct_card['price']:.2f}** (vs **${wrong_card['price']:.2f}**).\n"
-                f"🏆 Puntaje final: **{score} puntos**."
+                f"🏆 Puntaje final: **{score} puntos** · **{score * 5} monedas** 💰."
             ),
             "embeds": [
                 {"title": f"✅ {correct_card['name']} — ${correct_card['price']:.2f}", "image": {"url": correct_card["image_url"]}, "color": 0x2ECC71},
@@ -666,6 +671,14 @@ class GameManager:
         if not cards:
             return {"content": "No tienes cartas aún. Usa `/sobre` para abrir tu primer sobre."}
 
+        banner_abbrevs = {"permanent": "OL", "rotating": "NG"}
+        card_banner: dict[str, str] = {}
+        for banner_key, banner in ALL_BANNERS.items():
+            abbrev = banner_abbrevs[banner_key]
+            for rarity in ("secret", "ultra", "super", "rare", "common"):
+                for c in banner.get(rarity, []):
+                    card_banner[str(c["id"])] = abbrev
+
         rarity_order = ["secret", "ultra", "super", "rare", "common"]
         rarity_names = {"secret": "Secret Rare", "ultra": "Ultra Rare", "super": "Super Rare", "rare": "Rare", "common": "Common"}
         cards_sorted = sorted(cards, key=lambda x: (rarity_order.index(x["rarity"]), x["card_name"]))
@@ -678,16 +691,27 @@ class GameManager:
         page = max(0, min(page, total_pages - 1))
         page_cards = cards_sorted[page * page_size:(page + 1) * page_size]
 
-        best = page_cards[0]
-        fields = []
+        grouped: dict[str, list[str]] = {}
         for c in page_cards:
+            r = c["rarity"]
+            abbrev = card_banner.get(str(c["card_id"]), "??")
             lock = " 🔒" if c.get("protected") else ""
+            grouped.setdefault(r, []).append(f"{c['card_name']} ({abbrev}) ×{c['count']}{lock}")
+
+        fields = []
+        for r in rarity_order:
+            if r not in grouped:
+                continue
+            value = "\n".join(grouped[r])
+            if len(value) > 1024:
+                value = value[:1021] + "..."
             fields.append({
-                "name": f"{RARITY_EMOJIS[c['rarity']]} {c['card_name']}",
-                "value": f"×{c['count']}{lock}",
-                "inline": True,
+                "name": f"{RARITY_EMOJIS[r]} {rarity_names[r]}",
+                "value": value,
+                "inline": False,
             })
 
+        best = page_cards[0]
         embed = {
             "title": f"📦 Colección — {total_unique} únicas · {total_copies} copias",
             "thumbnail": {"url": best.get("image_url", "")},

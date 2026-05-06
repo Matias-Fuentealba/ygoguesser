@@ -24,7 +24,7 @@ class Database:
             ignore_duplicates=True,
         ).execute()
 
-    def add_score(self, discord_id: str, score: int, won: bool):
+    def add_score(self, discord_id: str, score: int, won: bool, coins: int | None = None):
         user = (
             self.client.table("users")
             .select("total_score, games_played, games_won, coins_balance")
@@ -33,11 +33,12 @@ class Database:
             .execute()
             .data
         )
+        coins_earned = coins if coins is not None else score
         self.client.table("users").update({
             "total_score": user["total_score"] + score,
             "games_played": user["games_played"] + 1,
             "games_won": user["games_won"] + (1 if won else 0),
-            "coins_balance": (user.get("coins_balance") or 0) + score,
+            "coins_balance": (user.get("coins_balance") or 0) + coins_earned,
         }).eq("discord_id", discord_id).execute()
 
     def get_ranking(self, limit: int = 10) -> list:
