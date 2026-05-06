@@ -502,10 +502,21 @@ class GameManager:
             "components": self._x10_buttons(user_id),
         }
 
+    async def toggle_protect_card(self, user_id: str, card_name: str) -> dict:
+        result = self.db.toggle_protect_card(user_id, card_name)
+        if not result:
+            return {"content": f"❌ No tienes ninguna carta que coincida con **{card_name}** en tu colección."}
+        icon = "🔒" if result["protected"] else "🔓"
+        action = "protegida" if result["protected"] else "desprotegida"
+        return {"content": f"{icon} **{result['card_name']}** ahora está {action}."}
+
     async def show_sell_duplicates(self, user_id: str) -> dict:
         cards = self.db.get_collection(user_id)
-        duplicates = [c for c in cards if c["count"] > 1]
+        duplicates = [c for c in cards if c["count"] > 1 and not c.get("protected")]
         if not duplicates:
+            protected_dups = [c for c in cards if c["count"] > 1 and c.get("protected")]
+            if protected_dups:
+                return {"content": f"No tienes duplicadas vendibles. Tienes **{len(protected_dups)}** carta(s) duplicada(s) protegidas 🔒."}
             return {"content": "No tienes cartas duplicadas para vender."}
 
         rarity_order = ["secret", "ultra", "super", "rare", "common"]
@@ -670,9 +681,10 @@ class GameManager:
         best = page_cards[0]
         fields = []
         for c in page_cards:
+            lock = " 🔒" if c.get("protected") else ""
             fields.append({
                 "name": f"{RARITY_EMOJIS[c['rarity']]} {c['card_name']}",
-                "value": f"×{c['count']}",
+                "value": f"×{c['count']}{lock}",
                 "inline": True,
             })
 

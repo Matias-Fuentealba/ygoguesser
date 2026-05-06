@@ -191,7 +191,7 @@ class Database:
 
     def sell_duplicates(self, discord_id: str, rarity_values: dict) -> int:
         cards = self.get_collection(discord_id)
-        duplicates = [c for c in cards if c["count"] > 1]
+        duplicates = [c for c in cards if c["count"] > 1 and not c.get("protected")]
         if not duplicates:
             return 0
 
@@ -210,11 +210,26 @@ class Database:
     def get_collection(self, discord_id: str) -> list[dict]:
         result = (
             self.client.table("collection")
-            .select("card_id, card_name, rarity, image_url, count")
+            .select("card_id, card_name, rarity, image_url, count, protected")
             .eq("discord_id", discord_id)
             .execute()
         )
         return result.data
+
+    def toggle_protect_card(self, discord_id: str, card_name: str) -> dict | None:
+        result = (
+            self.client.table("collection")
+            .select("card_id, card_name, protected")
+            .eq("discord_id", discord_id)
+            .ilike("card_name", card_name)
+            .execute()
+        )
+        if not result.data:
+            return None
+        row = result.data[0]
+        new_val = not bool(row.get("protected"))
+        self.client.table("collection").update({"protected": new_val}).eq("discord_id", discord_id).eq("card_id", row["card_id"]).execute()
+        return {"card_name": row["card_name"], "protected": new_val}
 
     # ---------- channel locks ----------
 

@@ -67,6 +67,18 @@ COMMANDS = [
         "description": "Vende tus cartas duplicadas a cambio de monedas.",
     },
     {
+        "name": "proteger",
+        "description": "Protege o desprotege una carta de tu colección para evitar que se venda.",
+        "options": [
+            {
+                "name": "carta",
+                "description": "Nombre de la carta a proteger/desproteger",
+                "type": 3,
+                "required": True,
+            }
+        ],
+    },
+    {
         "name": "config",
         "description": "Configura restricciones de canal para los comandos (solo admins).",
         "options": [

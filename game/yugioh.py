@@ -186,16 +186,29 @@ def build_hints(card: dict) -> list[str]:
         def_ = card["def"] if card["def"] not in ("N/A", None) else "?"
         hint3 = f"🎯 ATK exacto: **{atk}** / DEF exacto: **{def_}**"
 
-    # Pista 4 — Nombre: inicial, palabras y longitud
-    initial = name[0].upper()
+    # Pista 4 & 5 — Nombre: adaptadas si el arquetipo forma parte del nombre
     word_str = f"**{len(words)}** {'palabra' if len(words) == 1 else 'palabras'}"
-    hint4 = (
-        f"🔤 El nombre empieza con **\"{initial}\"**, "
-        f"tiene {word_str} y **{letter_count}** letras (sin espacios ni guiones)"
-    )
+    archetype = card.get("archetype", "")
+    arch_in_name = archetype and archetype.lower() in name.lower()
 
-    # Pista 5 — Fuerte: fragmento del nombre
-    fragment = name[:max(4, len(name) // 3)] + "..."
-    hint5 = f"💥 El nombre comienza con: **\"{fragment}\"**"
+    if arch_in_name:
+        arch_idx = name.lower().find(archetype.lower())
+        suffix = name[arch_idx + len(archetype):].strip(" -").strip()
+        if suffix:
+            hint4 = (
+                f"🔤 Tiene {word_str} y **{letter_count}** letras (sin espacios ni guiones). "
+                f"La parte única empieza con **\"{suffix[0].upper()}\"**"
+            )
+            frag = suffix[:max(3, len(suffix) // 2)] + "..."
+            hint5 = f"💥 La parte única del nombre comienza con: **\"{frag}\"**"
+        else:
+            hint4 = f"🔤 El nombre empieza con **\"{name[0].upper()}\"**, tiene {word_str} y **{letter_count}** letras"
+            hint5 = f"💥 El nombre comienza con: **\"{name[:max(4, len(name) // 3)]}...\"**"
+    else:
+        hint4 = (
+            f"🔤 El nombre empieza con **\"{name[0].upper()}\"**, "
+            f"tiene {word_str} y **{letter_count}** letras (sin espacios ni guiones)"
+        )
+        hint5 = f"💥 El nombre comienza con: **\"{name[:max(4, len(name) // 3)]}...\"**"
 
     return [hint1, hint2, hint3, hint4, hint5]

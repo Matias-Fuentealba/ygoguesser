@@ -118,6 +118,10 @@ async def process_command(payload: dict, token: str):
             response = await gm.get_gacha_info()
         elif command == "vender":
             response = await gm.show_sell_duplicates(user_id)
+        elif command == "proteger":
+            options = payload["data"].get("options", [])
+            card_name = options[0]["value"] if options else ""
+            response = await gm.toggle_protect_card(user_id, card_name)
         elif command == "help":
             response = await gm.get_help()
         elif command == "config":
