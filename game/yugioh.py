@@ -67,7 +67,15 @@ def _fetch_card_for_price_once(exclude_names: set = None) -> dict | None:
 
 
 
-def fetch_random_card() -> dict | None:
+def fetch_random_card(retries: int = 5) -> dict | None:
+    for _ in range(retries):
+        result = _fetch_random_card_once()
+        if result:
+            return result
+    return None
+
+
+def _fetch_random_card_once() -> dict | None:
     monster_type = random.choice(MONSTER_TYPES)
     try:
         offset = random.randint(0, 400)

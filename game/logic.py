@@ -524,12 +524,22 @@ class GameManager:
 
         fields = []
         for r in rarity_order:
-            if grouped[r]:
-                fields.append({
-                    "name": f"{RARITY_EMOJIS[r]} {rarity_names[r]} ({RARITY_SELL_VALUES[r]} 💰/copia)",
-                    "value": "\n".join(grouped[r]),
-                    "inline": False,
-                })
+            if not grouped[r]:
+                continue
+            lines = grouped[r]
+            value = "\n".join(lines)
+            if len(value) > 1024:
+                kept, total_r = [], len(lines)
+                for line in lines:
+                    if len("\n".join(kept + [line])) > 980:
+                        break
+                    kept.append(line)
+                value = "\n".join(kept) + f"\n*...y {total_r - len(kept)} más*"
+            fields.append({
+                "name": f"{RARITY_EMOJIS[r]} {rarity_names[r]} ({RARITY_SELL_VALUES[r]} 💰/copia)",
+                "value": value,
+                "inline": False,
+            })
 
         return {
             "embeds": [{
