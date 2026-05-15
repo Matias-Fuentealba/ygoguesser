@@ -117,12 +117,7 @@ class GameManager:
             return t("hint_all_revealed", lang, max_hints=MAX_HINTS)
 
         self.db.reveal_hint(game["id"], next_index)
-
-        if game.get("game_mode") == "zoom":
-            score_if_correct = max(0, zoom_score(game["zoom_level"]) - next_index * 10)
-        else:
-            score_if_correct = calculate_score(next_index)
-
+        score_if_correct = calculate_score(next_index)
         return t("hint_text", lang, n=next_index + 1, max_hints=MAX_HINTS, hint=hints[next_index], score=score_if_correct)
 
     async def guess(self, user_id: str, username: str, guess: str, lang: str = "en"):

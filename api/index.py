@@ -217,20 +217,6 @@ async def process_component(payload: dict, token: str):
             parts = custom_id.split(":", 2)
             trade_id, owner_id = parts[1], parts[2]
             if user_id != owner_id:
-                response = {"content": "❌ Solo el usuario al que se le propuso el intercambio puede aceptarlo."}
-            else:
-                response = await gm.accept_trade(trade_id, user_id)
-        elif custom_id.startswith("trade_reject:"):
-            parts = custom_id.split(":", 2)
-            trade_id, owner_id = parts[1], parts[2]
-            if user_id != owner_id:
-                response = {"content": "❌ Solo el usuario al que se le propuso el intercambio puede rechazarlo."}
-            else:
-                response = await gm.reject_trade(trade_id, user_id)
-        elif custom_id.startswith("trade_accept:"):
-            parts = custom_id.split(":", 2)
-            trade_id, owner_id = parts[1], parts[2]
-            if user_id != owner_id:
                 response = {"content": _t("trade_wrong_user_accept", lang)}
             else:
                 response = await gm.accept_trade(trade_id, user_id, lang)
@@ -241,6 +227,8 @@ async def process_component(payload: dict, token: str):
                 response = {"content": _t("trade_wrong_user_reject", lang)}
             else:
                 response = await gm.reject_trade(trade_id, user_id, lang)
+        elif custom_id == "faltan_noop" or custom_id == "coleccion_noop":
+            return
         else:
             response = _t("unrecognized_action", lang)
     except Exception as e:
@@ -249,9 +237,105 @@ async def process_component(payload: dict, token: str):
     await send_followup(token, response)
 
 
-@app.get("/")
-async def health():
-    return {"status": "ok"}
+@app.get("/", response_class=HTMLResponse)
+async def home():
+    return """
+    <html>
+    <head>
+      <title>YGOGuesser</title>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+          font-family: sans-serif;
+          background: #0d0d1a;
+          color: #eee;
+          min-height: 100vh;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          padding: 40px 20px;
+          text-align: center;
+        }
+        h1 { font-size: 2.8rem; color: #FFD700; margin-bottom: 12px; }
+        p.sub { color: #aaa; font-size: 1.1rem; max-width: 500px; margin-bottom: 40px; }
+        .cards {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 16px;
+          justify-content: center;
+          margin-bottom: 40px;
+        }
+        .card {
+          background: #1a1a2e;
+          border: 1px solid #333;
+          border-radius: 12px;
+          padding: 20px 24px;
+          width: 200px;
+        }
+        .card .icon { font-size: 2rem; margin-bottom: 8px; }
+        .card h3 { font-size: 1rem; color: #FFD700; margin-bottom: 6px; }
+        .card p { font-size: 0.85rem; color: #999; }
+        .links { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+        a.btn {
+          background: #FFD700;
+          color: #0d0d1a;
+          font-weight: bold;
+          padding: 12px 24px;
+          border-radius: 8px;
+          text-decoration: none;
+          font-size: 0.95rem;
+          transition: opacity 0.2s;
+        }
+        a.btn:hover { opacity: 0.85; }
+        a.btn.secondary {
+          background: transparent;
+          color: #FFD700;
+          border: 1px solid #FFD700;
+        }
+        footer { margin-top: 48px; color: #555; font-size: 0.8rem; }
+      </style>
+    </head>
+    <body>
+      <h1>🎴 YGOGuesser</h1>
+      <p class="sub">A Yu-Gi-Oh! Discord bot. Guess cards, collect them, trade with friends.</p>
+
+      <div class="cards">
+        <div class="card">
+          <div class="icon">🃏</div>
+          <h3>Hints Mode</h3>
+          <p>Guess the card from progressive clues. Fewer hints = more points.</p>
+        </div>
+        <div class="card">
+          <div class="icon">🔍</div>
+          <h3>Zoom Mode</h3>
+          <p>Identify the card from an extreme close-up image.</p>
+        </div>
+        <div class="card">
+          <div class="icon">💰</div>
+          <h3>Price Mode</h3>
+          <p>Pick the more expensive card. One wrong answer ends your streak.</p>
+        </div>
+        <div class="card">
+          <div class="icon">🎴</div>
+          <h3>Gacha</h3>
+          <p>Open packs, collect cards, sell duplicates and trade with others.</p>
+        </div>
+      </div>
+
+      <div class="links">
+        <a class="btn" href="https://discord.com/oauth2/authorize?client_id=1357088295358791761&scope=bot+applications.commands&permissions=2048" target="_blank">Add to Discord</a>
+        <a class="btn secondary" href="/banner">View Card Pool</a>
+        <a class="btn secondary" href="/terms">Terms</a>
+        <a class="btn secondary" href="/privacy">Privacy</a>
+      </div>
+
+      <footer>YGOGuesser is not affiliated with Konami. Card data by <a href="https://ygoprodeck.com" style="color:#FFD700">YGOPRODeck</a>.</footer>
+    </body>
+    </html>
+    """
 
 
 @app.get("/original-legends.png")
