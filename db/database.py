@@ -326,3 +326,15 @@ class Database:
 
     def remove_command_channel(self, guild_id: str, command: str):
         self.client.table("channel_locks").delete().eq("guild_id", guild_id).eq("command", command).execute()
+
+    # ---------- guild settings ----------
+
+    def get_guild_language(self, guild_id: str) -> str:
+        result = self.client.table("guild_settings").select("language").eq("guild_id", guild_id).execute()
+        return result.data[0]["language"] if result.data else "en"
+
+    def set_guild_language(self, guild_id: str, language: str):
+        self.client.table("guild_settings").upsert(
+            {"guild_id": guild_id, "language": language},
+            on_conflict="guild_id",
+        ).execute()

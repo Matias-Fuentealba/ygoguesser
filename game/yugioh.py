@@ -1,5 +1,6 @@
 import random
 import requests
+from game.strings import t
 
 MONSTER_TYPES = [
     "Normal Monster",
@@ -118,76 +119,61 @@ def _normalize(card: dict) -> dict:
     }
 
 
-def _atk_label(atk) -> str:
+def _atk_label(atk, lang: str = "en") -> str:
     if atk in ("N/A", None, "?"):
-        return "desconocido"
+        return t("atk_unknown", lang)
     val = int(atk)
     if val >= 3000:
-        return "muy alto (3000+)"
+        return t("atk_very_high", lang)
     if val >= 2500:
-        return "alto (2500+)"
+        return t("atk_high", lang)
     if val >= 2000:
-        return "medio-alto (2000+)"
+        return t("atk_mid_high", lang)
     if val >= 1500:
-        return "medio (1500+)"
-    return "bajo (menos de 1500)"
+        return t("atk_mid", lang)
+    return t("atk_low", lang)
 
 
-def _level_label(card: dict) -> str:
+def _level_label(card: dict, lang: str = "en") -> str:
     level = card["level"]
     if level in ("N/A", None):
         return "N/A"
     val = int(level)
     if card["is_link"]:
-        return f"Link {val}"
+        return t("level_link", lang, val=val)
     if card["is_xyz"]:
-        label = "bajo" if val <= 4 else "medio" if val <= 6 else "alto"
-        return f"Rango {label} ({val})"
-    label = "bajo" if val <= 4 else "medio" if val <= 6 else "alto" if val <= 8 else "muy alto"
-    return f"Nivel {label} ({val}★)"
+        key = "level_rank_low" if val <= 4 else "level_rank_mid" if val <= 6 else "level_rank_high"
+        return t(key, lang, val=val)
+    key = "level_low" if val <= 4 else "level_mid" if val <= 6 else "level_high" if val <= 8 else "level_very_high"
+    return t(key, lang, val=val)
 
 
-
-def build_hints(card: dict) -> list[str]:
+def build_hints(card: dict, lang: str = "en") -> list[str]:
     name = card["name"]
     words = name.split()
     letter_count = len(name.replace(" ", "").replace("-", ""))
 
-    # Pista 1 — Compuesta: filtra fuertemente desde el inicio
     if card["is_extra"]:
         card_type = card["type"].replace(" Monster", "")
-        hint1 = (
-            f"🃏 Es un monstruo **{card_type}**, "
-            f"atributo **{card['attribute']}**, "
-            f"tipo **{card['race']}**"
-        )
+        hint1 = t("hint1_extra", lang, type=card_type, attr=card["attribute"], race=card["race"])
     else:
-        level_range = (
-            "bajo (1–4)" if int(card["level"]) <= 4
-            else "medio (5–6)" if int(card["level"]) <= 6
-            else "alto (7+)"
-        )
-        hint1 = (
-            f"🃏 Es un monstruo de atributo **{card['attribute']}**, "
-            f"tipo **{card['race']}**, "
-            f"nivel **{level_range}**"
-        )
+        level_val = int(card["level"])
+        lr_key = "level_range_low" if level_val <= 4 else "level_range_mid" if level_val <= 6 else "level_range_high"
+        hint1 = t("hint1_normal", lang, attr=card["attribute"], race=card["race"], level_range=t(lr_key, lang))
 
-    # Pista 2 — Estructural: nivel exacto y ATK aproximado
-    atk_label = _atk_label(card["atk"])
-    level_label = _level_label(card)
-    hint2 = f"⚙️ **{level_label}**, ATK **{atk_label}**"
+    atk_lbl = _atk_label(card["atk"], lang)
+    level_lbl = _level_label(card, lang)
+    hint2 = t("hint2", lang, level_label=level_lbl, atk_label=atk_lbl)
 
-    # Pista 3 — Temática: arquetipo o ATK/DEF exacto si no hay arquetipo
     if card["archetype"]:
-        hint3 = f"🎯 Pertenece al arquetipo **{card['archetype']}**"
+        hint3 = t("hint3_archetype", lang, archetype=card["archetype"])
     else:
         atk = card["atk"] if card["atk"] not in ("N/A", None) else "?"
         def_ = card["def"] if card["def"] not in ("N/A", None) else "?"
-        hint3 = f"🎯 ATK exacto: **{atk}** / DEF exacto: **{def_}**"
+        hint3 = t("hint3_stats", lang, atk=atk, def_=def_)
 
-    # Pista 4 & 5 — Nombre: adaptadas si el arquetipo forma parte del nombre
-    word_str = f"**{len(words)}** {'palabra' if len(words) == 1 else 'palabras'}"
+    n_words = len(words)
+    word_str = t("word_singular" if n_words == 1 else "word_plural", lang, n=n_words)
     archetype = card.get("archetype", "")
     arch_in_name = archetype and archetype.lower() in name.lower()
 
@@ -195,20 +181,14 @@ def build_hints(card: dict) -> list[str]:
         arch_idx = name.lower().find(archetype.lower())
         suffix = name[arch_idx + len(archetype):].strip(" -").strip()
         if suffix:
-            hint4 = (
-                f"🔤 Tiene {word_str} y **{letter_count}** letras (sin espacios ni guiones). "
-                f"La parte única empieza con **\"{suffix[0].upper()}\"**"
-            )
+            hint4 = t("hint4_unique", lang, word_str=word_str, letters=letter_count, char=suffix[0].upper())
             frag = suffix[:max(3, len(suffix) // 2)] + "..."
-            hint5 = f"💥 La parte única del nombre comienza con: **\"{frag}\"**"
+            hint5 = t("hint5_unique", lang, frag=frag)
         else:
-            hint4 = f"🔤 El nombre empieza con **\"{name[0].upper()}\"**, tiene {word_str} y **{letter_count}** letras"
-            hint5 = f"💥 El nombre comienza con: **\"{name[:max(4, len(name) // 3)]}...\"**"
+            hint4 = t("hint4_full", lang, char=name[0].upper(), word_str=word_str, letters=letter_count)
+            hint5 = t("hint5_full", lang, frag=name[:max(4, len(name) // 3)] + "...")
     else:
-        hint4 = (
-            f"🔤 El nombre empieza con **\"{name[0].upper()}\"**, "
-            f"tiene {word_str} y **{letter_count}** letras (sin espacios ni guiones)"
-        )
-        hint5 = f"💥 El nombre comienza con: **\"{name[:max(4, len(name) // 3)]}...\"**"
+        hint4 = t("hint4_full", lang, char=name[0].upper(), word_str=word_str, letters=letter_count)
+        hint5 = t("hint5_full", lang, frag=name[:max(4, len(name) // 3)] + "...")
 
     return [hint1, hint2, hint3, hint4, hint5]

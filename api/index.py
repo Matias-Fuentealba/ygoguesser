@@ -75,6 +75,8 @@ async def send_followup(token: str, response: str | dict):
 
 UNLOCKED_COMMANDS = {"config", "help", "ranking"}
 
+from game.strings import t as _t
+
 
 async def process_command(payload: dict, token: str):
     command = payload["data"]["name"]
@@ -87,62 +89,64 @@ async def process_command(payload: dict, token: str):
 
     db = Database()
     gm = GameManager(db)
+    lang = db.get_guild_language(guild_id)
 
     try:
         # Channel lock check
         if command not in UNLOCKED_COMMANDS:
             allowed = db.get_command_channel(guild_id, command)
             if allowed and channel_id != allowed:
-                await send_followup(token, f"❌ `/{command}` solo puede usarse en <#{allowed}>.")
+                await send_followup(token, {"content": _t("channel_locked", lang, cmd=command, channel=allowed)})
                 return
 
-        if command == "jugar":
-            response = await gm.start_game(user_id, username)
-        elif command == "pista":
-            response = await gm.get_hint(user_id)
-        elif command == "adivinar":
+        if command == "play":
+            response = await gm.start_game(user_id, username, lang)
+        elif command == "hint":
+            response = await gm.get_hint(user_id, lang)
+        elif command == "guess":
             options = payload["data"].get("options", [])
             guess = options[0]["value"] if options else ""
-            response = await gm.guess(user_id, username, guess)
-        elif command == "zoom-pista":
-            response = await gm.next_zoom(user_id)
-        elif command == "rendirse":
-            response = await gm.surrender(user_id)
+            response = await gm.guess(user_id, username, guess, lang)
+        elif command == "zoom-hint":
+            response = await gm.next_zoom(user_id, lang)
+        elif command == "surrender":
+            response = await gm.surrender(user_id, lang)
         elif command == "ranking":
-            response = await gm.get_ranking()
-        elif command == "sobre":
-            response = await gm.open_sobre(user_id, username)
-        elif command == "coleccion":
-            response = await gm.get_collection(user_id)
+            response = await gm.get_ranking(lang=lang)
+        elif command == "pack":
+            response = await gm.open_sobre(user_id, username, lang)
+        elif command == "collection":
+            response = await gm.get_collection(user_id, lang=lang)
         elif command == "gacha":
-            response = await gm.get_gacha_info(user_id)
-        elif command == "vender":
-            response = await gm.show_sell_duplicates(user_id)
-        elif command == "proteger":
+            response = await gm.get_gacha_info(user_id, lang)
+        elif command == "sell":
+            response = await gm.show_sell_duplicates(user_id, lang)
+        elif command == "protect":
             options = payload["data"].get("options", [])
             card_name = options[0]["value"] if options else ""
-            response = await gm.toggle_protect_card(user_id, card_name)
-        elif command == "intercambiar":
+            response = await gm.toggle_protect_card(user_id, card_name, lang)
+        elif command == "trade":
             opts = {o["name"]: o["value"] for o in payload["data"].get("options", [])}
-            to_user_id = opts.get("usuario", "")
-            from_card_name = opts.get("mi_carta", "")
-            to_card_name = opts.get("su_carta", "")
-            response = await gm.initiate_trade(user_id, to_user_id, from_card_name, to_card_name)
+            to_user_id = opts.get("user", "")
+            from_card_name = opts.get("my_card", "")
+            to_card_name = opts.get("their_card", "")
+            response = await gm.initiate_trade(user_id, to_user_id, from_card_name, to_card_name, lang)
         elif command == "help":
-            response = await gm.get_help()
+            response = await gm.get_help(lang)
         elif command == "config":
             if not bool(int(member.get("permissions", "0")) & 0x8):
-                response = {"content": "❌ Solo los administradores pueden usar este comando."}
+                response = {"content": _t("config_no_admin", lang)}
             else:
                 options = {o["name"]: o["value"] for o in payload["data"].get("options", [])}
-                accion = options.get("accion", "ver")
-                cmd = options.get("comando")
-                ch = options.get("canal")
-                response = await gm.handle_config(guild_id, accion, cmd, ch)
+                accion = options.get("action", "view")
+                cmd = options.get("command")
+                ch = options.get("channel")
+                language = options.get("language")
+                response = await gm.handle_config(guild_id, accion, cmd, ch, language, lang)
         else:
-            response = "Comando no reconocido."
+            response = _t("unrecognized_action", lang)
     except Exception as e:
-        response = f"⚠️ Error interno: `{type(e).__name__}: {e}`"
+        response = f"⚠️ Internal error: `{type(e).__name__}: {e}`"
 
     await send_followup(token, response)
 
@@ -153,60 +157,62 @@ async def process_component(payload: dict, token: str):
     user = member.get("user") or payload.get("user", {})
     user_id = user.get("id", "")
     username = user.get("username", "unknown")
+    guild_id = payload.get("guild_id", "")
 
     db = Database()
     gm = GameManager(db)
+    lang = db.get_guild_language(guild_id)
 
     try:
         if custom_id == "mode_hints":
-            response = await gm.start_hints_game(user_id, username)
+            response = await gm.start_hints_game(user_id, username, lang)
         elif custom_id == "mode_zoom":
-            response = await gm.start_zoom(user_id, username)
+            response = await gm.start_zoom(user_id, username, lang)
         elif custom_id == "mode_price":
-            response = await gm.start_price_game(user_id, username)
+            response = await gm.start_price_game(user_id, username, lang)
         elif custom_id in ("price_1", "price_2"):
             choice = int(custom_id[-1])
-            response = await gm.choose_price(user_id, choice)
+            response = await gm.choose_price(user_id, choice, lang)
         elif custom_id.startswith("sobre_banner:"):
             parts = custom_id.split(":")
             banner_key, owner_id = parts[1], parts[2]
             if user_id != owner_id:
-                response = {"content": "❌ Solo el usuario que usó `/sobre` puede elegir el banner.", "components": []}
+                response = {"content": "❌ Only the user who used `/pack` can choose the banner.", "components": []}
             else:
-                response = await gm.open_sobre_banner(user_id, username, banner_key)
+                response = await gm.open_sobre_banner(user_id, username, banner_key, lang)
         elif custom_id.startswith("gacha_x10:"):
             parts = custom_id.split(":")
             owner_id = parts[1]
             banner_key = parts[2] if len(parts) > 2 else "permanent"
             if user_id != owner_id:
-                response = {"content": "❌ Solo el usuario que abrió el sobre puede usar este botón."}
+                response = {"content": "❌ Only the user who opened the pack can use this button."}
             else:
-                response = await gm.open_sobre_x10(user_id, banner_key)
+                response = await gm.open_sobre_x10(user_id, banner_key, lang)
         elif custom_id.startswith("coleccion_page:"):
             page = int(custom_id.split(":")[1])
-            response = await gm.get_collection(user_id, page)
+            response = await gm.get_collection(user_id, page, lang)
         elif custom_id.startswith("vender_confirmar:"):
             owner_id = custom_id.split(":")[1]
             if user_id != owner_id:
-                response = {"content": "❌ Solo el usuario que inició la venta puede confirmarla.", "components": []}
+                response = {"content": "❌ Only the user who started the sale can confirm it.", "components": []}
             else:
-                response = await gm.confirm_sell_duplicates(user_id)
+                response = await gm.confirm_sell_duplicates(user_id, lang)
         elif custom_id.startswith("vender_cancelar:"):
             owner_id = custom_id.split(":")[1]
             if user_id != owner_id:
-                response = {"content": "❌ Solo el usuario que inició la venta puede cancelarla.", "components": []}
+                response = {"content": "❌ Only the user who started the sale can cancel it.", "components": []}
             else:
-                response = {"embeds": [{"title": "Venta cancelada.", "color": 0x9D9D9D}], "components": []}
+                response = {"embeds": [{"title": _t("sell_cancelled", lang), "color": 0x9D9D9D}], "components": []}
         elif custom_id.startswith("ranking_mode:"):
             mode = custom_id.split(":")[1]
-            response = await gm.get_ranking(mode)
+            response = await gm.get_ranking(mode, lang)
         elif custom_id.startswith("faltan:"):
             banner_key = custom_id.split(":")[1]
-            response = await gm.get_missing_cards(user_id, banner_key)
+            response = await gm.get_missing_cards(user_id, banner_key, lang=lang)
         elif custom_id.startswith("faltan_page:"):
             parts = custom_id.split(":")
             banner_key, page = parts[1], int(parts[2])
-            response = await gm.get_missing_cards(user_id, banner_key, page)
+            response = await gm.get_missing_cards(user_id, banner_key, page, lang)
         elif custom_id.startswith("trade_accept:"):
             parts = custom_id.split(":", 2)
             trade_id, owner_id = parts[1], parts[2]
@@ -221,10 +227,24 @@ async def process_component(payload: dict, token: str):
                 response = {"content": "❌ Solo el usuario al que se le propuso el intercambio puede rechazarlo."}
             else:
                 response = await gm.reject_trade(trade_id, user_id)
+        elif custom_id.startswith("trade_accept:"):
+            parts = custom_id.split(":", 2)
+            trade_id, owner_id = parts[1], parts[2]
+            if user_id != owner_id:
+                response = {"content": _t("trade_wrong_user_accept", lang)}
+            else:
+                response = await gm.accept_trade(trade_id, user_id, lang)
+        elif custom_id.startswith("trade_reject:"):
+            parts = custom_id.split(":", 2)
+            trade_id, owner_id = parts[1], parts[2]
+            if user_id != owner_id:
+                response = {"content": _t("trade_wrong_user_reject", lang)}
+            else:
+                response = await gm.reject_trade(trade_id, user_id, lang)
         else:
-            response = "Acción no reconocida."
+            response = _t("unrecognized_action", lang)
     except Exception as e:
-        response = f"⚠️ Error interno: `{type(e).__name__}: {e}`"
+        response = f"⚠️ Internal error: `{type(e).__name__}: {e}`"
 
     await send_followup(token, response)
 

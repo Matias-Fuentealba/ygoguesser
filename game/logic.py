@@ -9,6 +9,7 @@ from game.gacha import (
     PERMANENT_BANNER, ROTATING_BANNER, X10_COST,
     RARITY_EMOJIS, RARITY_COLORS, COOLDOWN_HOURS,
 )
+from game.strings import t
 
 ALL_BANNERS = {"permanent": PERMANENT_BANNER, "rotating": ROTATING_BANNER}
 
@@ -25,18 +26,18 @@ def normalize_name(name: str) -> str:
     return re.sub(r"[^a-z0-9]", "", name.strip().lower())
 
 
-def _build_price_message(champion: dict, challenger: dict, score: int, prefix: str = "") -> dict:
+def _build_price_message(champion: dict, challenger: dict, score: int, prefix: str = "", lang: str = "en") -> dict:
     return {
-        "content": f"{prefix}💰 **¿Cuál carta es más cara?** | Puntaje: **{score}**",
+        "content": f"{prefix}{t('price_question', lang, score=score)}",
         "embeds": [
             {
-                "title": f"Carta 1: {champion['name']}",
+                "title": f"{t('btn_card1', lang)}: {champion['name']}",
                 "description": f"📦 {champion['set_name']}\n🏷️ {champion['set_rarity']}",
                 "image": {"url": champion["image_url"]},
                 "color": 0xF1C40F,
             },
             {
-                "title": f"Carta 2: {challenger['name']}",
+                "title": f"{t('btn_card2', lang)}: {challenger['name']}",
                 "description": f"📦 {challenger['set_name']}\n🏷️ {challenger['set_rarity']}",
                 "image": {"url": challenger["image_url"]},
                 "color": 0xF1C40F,
@@ -46,8 +47,8 @@ def _build_price_message(champion: dict, challenger: dict, score: int, prefix: s
             {
                 "type": 1,
                 "components": [
-                    {"type": 2, "style": 1, "label": "Carta 1", "custom_id": "price_1"},
-                    {"type": 2, "style": 1, "label": "Carta 2", "custom_id": "price_2"},
+                    {"type": 2, "style": 1, "label": t("btn_card1", lang), "custom_id": "price_1"},
+                    {"type": 2, "style": 1, "label": t("btn_card2", lang), "custom_id": "price_2"},
                 ],
             }
         ],
@@ -65,59 +66,55 @@ class GameManager:
     def __init__(self, db: Database):
         self.db = db
 
-    async def start_game(self, user_id: str, username: str) -> dict:
+    async def start_game(self, user_id: str, username: str, lang: str = "en") -> dict:
         existing = self.db.get_active_game(user_id)
         if existing:
             mode = existing.get("game_mode", "hints")
-            hints_map = {"hints": "`/pista` y `/adivinar`", "zoom": "`/zoom-pista` y `/adivinar-zoom`", "price": "los botones"}
-            return {"content": f"Ya tienes una partida activa. Usa {hints_map.get(mode, '`/rendirse`')} o `/rendirse`."}
+            key = {
+                "hints": "game_already_active_hints",
+                "zoom": "game_already_active_zoom",
+                "price": "game_already_active_price",
+            }.get(mode, "game_already_active_other")
+            return {"content": t(key, lang)}
 
         return {
-            "content": (
-                "🎮 **Bienvenido a YGOGuesser!**\n\n"
-                "Pon a prueba tu conocimiento de cartas Yu-Gi-Oh! Elige un modo:\n\n"
-                "🃏 **Modo Pistas** — Se revelan pistas progresivas sobre una carta. Cuantas menos pistas uses, más puntos ganas.\n"
-                "🔍 **Modo Zoom** — Se muestra una imagen muy zoomeada de la carta. Si fallas, el zoom se aleja poco a poco.\n"
-                "💰 **Modo Precio** — Se muestran dos cartas. Adivina cuál es más cara en el mercado TCG. ¡Un fallo y termina la racha!\n"
-            ),
+            "content": t("welcome_body", lang),
             "components": [{
                 "type": 1,
                 "components": [
-                    {"type": 2, "style": 1, "label": "🃏 Modo Pistas", "custom_id": "mode_hints"},
-                    {"type": 2, "style": 2, "label": "🔍 Modo Zoom", "custom_id": "mode_zoom"},
-                    {"type": 2, "style": 4, "label": "💰 Modo Precio", "custom_id": "mode_price"},
+                    {"type": 2, "style": 1, "label": t("btn_hints", lang), "custom_id": "mode_hints"},
+                    {"type": 2, "style": 2, "label": t("btn_zoom", lang), "custom_id": "mode_zoom"},
+                    {"type": 2, "style": 4, "label": t("btn_price", lang), "custom_id": "mode_price"},
                 ],
             }],
         }
 
-    async def start_hints_game(self, user_id: str, username: str) -> str:
+    async def start_hints_game(self, user_id: str, username: str, lang: str = "en") -> str:
         card = fetch_random_card()
         if not card:
-            return "No se pudo obtener una carta. Intenta de nuevo más tarde."
+            return t("cannot_fetch_card", lang)
 
         self.db.upsert_user(user_id, username)
         self.db.create_game(user_id, card["name"], card)
 
-        hints = build_hints(card)
-        return (
-            f"🃏 **¡Modo Pistas iniciado!**\n\n"
-            f"Aquí va la primera pista:\n{hints[0]}\n\n"
-            f"Tienes hasta **{MAX_HINTS} pistas** disponibles.\n"
-            f"➡️ Usa `/pista` para más pistas o `/adivinar carta:<nombre>` para intentar."
-        )
+        hints = build_hints(card, lang)
+        return t("hints_started", lang, hint=hints[0], max_hints=MAX_HINTS)
 
-    async def get_hint(self, user_id: str) -> str:
+    async def get_hint(self, user_id: str, lang: str = "en") -> str:
         game = self.db.get_active_game(user_id)
         if not game:
-            return "No tienes una partida activa. Usa `/jugar` para empezar."
+            return t("no_active_game", lang)
+
+        if game.get("game_mode") == "zoom":
+            return t("hint_not_available_zoom", lang)
 
         hints_revealed = game["hints_revealed"]
         card = game["card_data"]
-        hints = build_hints(card)
+        hints = build_hints(card, lang)
 
         next_index = hints_revealed + 1
         if next_index >= MAX_HINTS:
-            return f"Ya revelaste todas las pistas ({MAX_HINTS}/{MAX_HINTS}). Usa `/adivinar` o `/rendirse`."
+            return t("hint_all_revealed", lang, max_hints=MAX_HINTS)
 
         self.db.reveal_hint(game["id"], next_index)
 
@@ -125,23 +122,21 @@ class GameManager:
             score_if_correct = max(0, zoom_score(game["zoom_level"]) - next_index * 10)
         else:
             score_if_correct = calculate_score(next_index)
-        return (
-            f"💡 Pista {next_index + 1}/{MAX_HINTS}:\n{hints[next_index]}\n\n"
-            f"Acertar ahora vale **{score_if_correct} puntos**."
-        )
 
-    async def guess(self, user_id: str, username: str, guess: str):
+        return t("hint_text", lang, n=next_index + 1, max_hints=MAX_HINTS, hint=hints[next_index], score=score_if_correct)
+
+    async def guess(self, user_id: str, username: str, guess: str, lang: str = "en"):
         game = self.db.get_active_game(user_id)
         if not game:
-            return "No tienes una partida activa. Usa `/jugar` para empezar."
+            return t("no_active_game", lang)
         if game.get("game_mode") == "zoom":
-            return await self.guess_zoom(user_id, username, guess)
-        return await self.make_guess(user_id, username, guess)
+            return await self.guess_zoom(user_id, username, guess, lang)
+        return await self.make_guess(user_id, username, guess, lang)
 
-    async def make_guess(self, user_id: str, username: str, guess: str) -> str:
+    async def make_guess(self, user_id: str, username: str, guess: str, lang: str = "en") -> str:
         game = self.db.get_active_game(user_id)
         if not game:
-            return "No tienes una partida activa. Usa `/jugar` para empezar."
+            return t("no_active_game", lang)
 
         card = game["card_data"]
         hints_revealed = game["hints_revealed"]
@@ -152,8 +147,7 @@ class GameManager:
             self.db.end_game(game["id"], "won")
             self.db.add_score(user_id, score, won=True)
             return card_embed(
-                f"✅ **¡Correcto!** La carta era **{card['name']}**.\n"
-                f"🏆 Ganaste **{score} puntos** (pistas usadas: {hints_revealed}/{MAX_HINTS}).",
+                t("correct_hints", lang, name=card["name"], score=score, hints=hints_revealed, max_hints=MAX_HINTS),
                 card, 0x2ECC71
             )
 
@@ -162,34 +156,24 @@ class GameManager:
 
         if new_attempts < 3:
             remaining = 3 - new_attempts
-            return (
-                f"❌ **Incorrecto.** Te quedan **{remaining} intento{'s' if remaining > 1 else ''}** "
-                f"con la pista actual."
-            )
+            s = "" if remaining == 1 else "s"
+            return t("wrong_attempts_left", lang, remaining=remaining, s=s)
 
-        # Agotó los 3 intentos de esta pista
         next_index = hints_revealed + 1
         if next_index >= MAX_HINTS:
             self.db.end_game(game["id"], "lost")
             self.db.add_score(user_id, 0, won=False)
-            return card_embed(
-                f"💀 **Agotaste todos los intentos.** La carta era **{card['name']}**.",
-                card, 0xE74C3C
-            )
+            return card_embed(t("wrong_all_attempts", lang, name=card["name"]), card, 0xE74C3C)
 
-        hints = build_hints(card)
+        hints = build_hints(card, lang)
         self.db.reveal_hint(game["id"], next_index)
         score_if_correct = calculate_score(next_index)
-        return (
-            f"❌ Agotaste los 3 intentos de esta pista. Siguiente pista automática:\n\n"
-            f"💡 Pista {next_index + 1}/{MAX_HINTS}:\n{hints[next_index]}\n\n"
-            f"Acertar ahora vale **{score_if_correct} puntos**."
-        )
+        return t("wrong_auto_hint", lang, n=next_index + 1, max_hints=MAX_HINTS, hint=hints[next_index], score=score_if_correct)
 
-    async def surrender(self, user_id: str) -> str | dict:
+    async def surrender(self, user_id: str, lang: str = "en") -> str | dict:
         game = self.db.get_active_game(user_id)
         if not game:
-            return "No tienes una partida activa. Usa `/jugar` para empezar."
+            return t("no_active_game", lang)
 
         game_mode = game.get("game_mode", "hints")
         self.db.end_game(game["id"], "lost")
@@ -197,65 +181,57 @@ class GameManager:
         if game_mode == "price":
             score = game["card_data"].get("score", 0)
             self.db.add_score(user_id, score, won=False, coins=score * 5)
-            return f"🏳️ Abandonaste el modo precio. Puntaje final: **{score} puntos** · **{score * 5} monedas** 💰."
+            return t("surrender_price", lang, score=score, coins=score * 5)
 
         card = game["card_data"]
         self.db.add_score(user_id, 0, won=False)
-        return card_embed(
-            f"🏳️ Te rendiste. La carta era **{card['name']}**.",
-            card, 0xE74C3C
-        )
+        return card_embed(t("surrender_hints", lang, name=card["name"]), card, 0xE74C3C)
 
-    async def start_zoom(self, user_id: str, username: str) -> dict:
+    async def start_zoom(self, user_id: str, username: str, lang: str = "en") -> dict:
         existing = self.db.get_active_game(user_id)
         if existing:
             mode = existing.get("game_mode", "hints")
-            cmd = "/adivinar-zoom" if mode == "zoom" else "/adivinar"
-            return {"content": f"Ya tienes una partida activa. Usa `{cmd}` o `/rendirse`."}
+            cmd = "/guess" if mode != "zoom" else "/guess"
+            return {"content": t("zoom_already_active", lang, cmd=cmd)}
 
         card = fetch_random_card()
         if not card:
-            return {"content": "No se pudo obtener una carta. Intenta de nuevo más tarde."}
+            return {"content": t("cannot_fetch_card", lang)}
 
         self.db.upsert_user(user_id, username)
         self.db.create_game(user_id, card["name"], card, game_mode="zoom")
 
         img = get_zoomed_image(card["image_url"], 0)
         if not img:
-            return {"content": "No se pudo procesar la imagen. Intenta de nuevo."}
+            return {"content": t("cannot_process_image", lang)}
 
         score = zoom_score(0)
         return {
-            "content": (
-                f"🔍 **¡Modo Zoom iniciado!**\n"
-                f"Adivina la carta con zoom nivel 1/{MAX_ZOOM_LEVEL + 1}.\n"
-                f"Acertar ahora vale **{score} puntos**. Tienes **3 intentos** por nivel.\n"
-                f"➡️ `/adivinar-zoom carta:<nombre>` para intentar.\n"
-                f"➡️ `/zoom-pista` para ver más de la imagen (baja el puntaje)."
-            ),
+            "content": t("zoom_started", lang, max_levels=MAX_ZOOM_LEVEL + 1, score=score),
             "image": img,
         }
 
-    async def guess_zoom(self, user_id: str, username: str, guess: str) -> dict:
+    async def guess_zoom(self, user_id: str, username: str, guess: str, lang: str = "en") -> dict:
         game = self.db.get_active_game(user_id)
         if not game or game.get("game_mode") != "zoom":
-            return {"content": "No tienes una partida de zoom activa. Usa `/zoom` para empezar."}
+            return {"content": t("no_active_game", lang)}
 
         card = game["card_data"]
         zoom_level = game["zoom_level"]
+        hints_revealed = game["hints_revealed"]
         attempts = game["attempts_on_hint"]
 
-        hints_revealed = game["hints_revealed"]
         if normalize_name(guess) == normalize_name(card["name"]):
             score = max(0, zoom_score(zoom_level) - hints_revealed * 10)
             self.db.end_game(game["id"], "won")
             self.db.add_score(user_id, score, won=True)
-            hints_note = f" · {hints_revealed} pista{'s' if hints_revealed != 1 else ''} usada{'s' if hints_revealed != 1 else ''}" if hints_revealed else ""
+            if hints_revealed:
+                s = "" if hints_revealed == 1 else "s"
+                hints_note = t("zoom_hints_note", lang, n=hints_revealed, s=s)
+            else:
+                hints_note = ""
             return {
-                "content": (
-                    f"✅ **¡Correcto!** La carta era **{card['name']}**.\n"
-                    f"🏆 Ganaste **{score} puntos** (zoom nivel {zoom_level + 1}/{MAX_ZOOM_LEVEL + 1}{hints_note})."
-                ),
+                "content": t("zoom_correct", lang, name=card["name"], score=score, level=zoom_level + 1, max_levels=MAX_ZOOM_LEVEL + 1, hints_note=hints_note),
                 "embed_image_url": card["image_url"],
                 "embed_color": 0x2ECC71,
             }
@@ -265,20 +241,15 @@ class GameManager:
 
         if new_attempts < 3:
             remaining = 3 - new_attempts
-            return {
-                "content": (
-                    f"❌ **Incorrecto.** Te quedan **{remaining} intento{'s' if remaining > 1 else ''}** "
-                    f"en este nivel de zoom."
-                )
-            }
+            s = "" if remaining == 1 else "s"
+            return {"content": t("zoom_wrong_attempts_left", lang, remaining=remaining, s=s)}
 
-        # Agotó los 3 intentos de este nivel
         next_level = zoom_level + 1
         if next_level > MAX_ZOOM_LEVEL:
             self.db.end_game(game["id"], "lost")
             self.db.add_score(user_id, 0, won=False)
             return {
-                "content": f"💀 **Agotaste todos los intentos.** La carta era **{card['name']}**.",
+                "content": t("zoom_wrong_all_attempts", lang, name=card["name"]),
                 "embed_image_url": card["image_url"],
                 "embed_color": 0xE74C3C,
             }
@@ -286,62 +257,53 @@ class GameManager:
         self.db.advance_zoom(game["id"], next_level)
         img = get_zoomed_image(card["image_url"], next_level)
         score = zoom_score(next_level)
-
         return {
-            "content": (
-                f"❌ Agotaste los intentos. Aquí va el siguiente nivel de zoom:\n"
-                f"🔍 Zoom nivel {next_level + 1}/{MAX_ZOOM_LEVEL + 1} — "
-                f"Acertar ahora vale **{score} puntos**."
-            ),
+            "content": t("zoom_wrong_auto_advance", lang, level=next_level + 1, max_levels=MAX_ZOOM_LEVEL + 1, score=score),
             "image": img,
         }
 
-    async def next_zoom(self, user_id: str) -> dict:
+    async def next_zoom(self, user_id: str, lang: str = "en") -> dict:
         game = self.db.get_active_game(user_id)
         if not game or game.get("game_mode") != "zoom":
-            return {"content": "❌ `/zoom-pista` solo está disponible en modo Zoom. Usa `/jugar` para empezar."}
+            return {"content": t("zoom_no_game", lang)}
 
         zoom_level = game["zoom_level"]
         next_level = zoom_level + 1
 
         if next_level > MAX_ZOOM_LEVEL:
-            return {"content": f"Ya estás en el nivel máximo de zoom ({zoom_level + 1}/{MAX_ZOOM_LEVEL + 1}). Usa `/adivinar-zoom` o `/rendirse`."}
+            return {"content": t("zoom_hint_max", lang, level=zoom_level + 1, max_levels=MAX_ZOOM_LEVEL + 1)}
 
         card = game["card_data"]
         self.db.advance_zoom(game["id"], next_level)
         img = get_zoomed_image(card["image_url"], next_level)
         score = zoom_score(next_level)
-
         return {
-            "content": (
-                f"🔍 Zoom nivel {next_level + 1}/{MAX_ZOOM_LEVEL + 1} — "
-                f"Acertar ahora vale **{score} puntos**."
-            ),
+            "content": t("zoom_hint_next", lang, level=next_level + 1, max_levels=MAX_ZOOM_LEVEL + 1, score=score),
             "image": img,
         }
 
-    async def start_price_game(self, user_id: str, username: str) -> dict:
+    async def start_price_game(self, user_id: str, username: str, lang: str = "en") -> dict:
         existing = self.db.get_active_game(user_id)
         if existing:
-            return {"content": "Ya tienes una partida activa. Usa `/rendirse` para abandonarla."}
+            return {"content": t("game_already_active_other", lang)}
 
         champion = fetch_card_for_price()
         if not champion:
-            return {"content": "No se pudieron obtener cartas con precio. Intenta de nuevo."}
+            return {"content": t("price_no_cards", lang)}
         challenger = fetch_card_for_price(exclude_names={champion["name"]})
         if not challenger:
-            return {"content": "No se pudieron obtener cartas con precio. Intenta de nuevo."}
+            return {"content": t("price_no_cards", lang)}
 
         self.db.upsert_user(user_id, username)
         state = {"champion": champion, "challenger": challenger, "champion_wins": 0, "score": 0}
         self.db.create_game(user_id, champion["name"], state, game_mode="price")
 
-        return _build_price_message(champion, challenger, score=0)
+        return _build_price_message(champion, challenger, score=0, lang=lang)
 
-    async def choose_price(self, user_id: str, choice: int) -> dict:
+    async def choose_price(self, user_id: str, choice: int, lang: str = "en") -> dict:
         game = self.db.get_active_game(user_id)
         if not game or game.get("game_mode") != "price":
-            return {"content": "No tienes una partida de precio activa. Usa `/precio` para empezar."}
+            return {"content": t("price_no_game", lang)}
 
         state = game["card_data"]
         champion = state["champion"]
@@ -367,32 +329,24 @@ class GameManager:
             if not new_champion:
                 self.db.end_game(game["id"], "won")
                 self.db.add_score(user_id, score, won=True, coins=score * 5)
-                return {"content": f"✅ ¡Correcto! No hay más cartas disponibles. Puntaje final: **{score} puntos** · **{score * 5} monedas** 💰."}
+                return {"content": t("price_win", lang, score=score, coins=score * 5)}
 
             new_challenger = fetch_card_for_price(exclude_names={new_champion["name"]})
             if not new_challenger:
                 self.db.end_game(game["id"], "won")
                 self.db.add_score(user_id, score, won=True, coins=score * 5)
-                return {"content": f"✅ ¡Correcto! No hay más cartas disponibles. Puntaje final: **{score} puntos** · **{score * 5} monedas** 💰."}
+                return {"content": t("price_win", lang, score=score, coins=score * 5)}
 
             state.update({"champion": new_champion, "challenger": new_challenger, "champion_wins": new_champion_wins, "score": score})
             self.db.update_game_data(game["id"], state)
 
-            prefix = (
-                f"✅ ¡Correcto! **{correct_card['name']}** valía **${correct_card['price']:.2f}** "
-                f"vs **${wrong_card['price']:.2f}** (+5 💰)\n\n"
-            )
-            return _build_price_message(new_champion, new_challenger, score, prefix=prefix)
+            prefix = t("price_correct_prefix", lang, card=correct_card["name"], price=correct_card["price"], other=wrong_card["price"])
+            return _build_price_message(new_champion, new_challenger, score, prefix=prefix, lang=lang)
 
-        # Incorrecto — fin de partida
         self.db.end_game(game["id"], "lost")
         self.db.add_score(user_id, score, won=False, coins=score * 5)
         return {
-            "content": (
-                f"❌ **Incorrecto.** La más cara era **{correct_card['name']}** "
-                f"con **${correct_card['price']:.2f}** (vs **${wrong_card['price']:.2f}**).\n"
-                f"🏆 Puntaje final: **{score} puntos** · **{score * 5} monedas** 💰."
-            ),
+            "content": t("price_wrong", lang, card=correct_card["name"], price=correct_card["price"], other=wrong_card["price"], score=score, coins=score * 5),
             "embeds": [
                 {"title": f"✅ {correct_card['name']} — ${correct_card['price']:.2f}", "image": {"url": correct_card["image_url"]}, "color": 0x2ECC71},
                 {"title": f"❌ {wrong_card['name']} — ${wrong_card['price']:.2f}", "image": {"url": wrong_card["image_url"]}, "color": 0xE74C3C},
@@ -400,17 +354,16 @@ class GameManager:
             "components": [],
         }
 
-    def _x10_buttons(self, user_id: str = "") -> list:
+    def _x10_buttons(self, user_id: str = "", lang: str = "en") -> list:
         return [{
             "type": 1,
             "components": [
-                {"type": 2, "style": 1, "label": f"x10 Original Legends ({X10_COST}💰)", "custom_id": f"gacha_x10:{user_id}:permanent"},
-                {"type": 2, "style": 2, "label": f"x10 Next Generation ({X10_COST}💰)", "custom_id": f"gacha_x10:{user_id}:rotating"},
+                {"type": 2, "style": 1, "label": t("btn_x10_perm", lang, cost=X10_COST), "custom_id": f"gacha_x10:{user_id}:permanent"},
+                {"type": 2, "style": 2, "label": t("btn_x10_rot", lang, cost=X10_COST), "custom_id": f"gacha_x10:{user_id}:rotating"},
             ],
         }]
 
     def _cooldown_check(self, user: dict):
-        """Returns (blocked, mins, secs) tuple."""
         last_raw = (user or {}).get("last_sobre")
         if not last_raw:
             return False, 0, 0
@@ -426,38 +379,35 @@ class GameManager:
         time_left = next_hour - now
         return True, int(time_left.total_seconds() // 60), int(time_left.total_seconds() % 60)
 
-    async def open_sobre(self, user_id: str, username: str) -> dict:
+    async def open_sobre(self, user_id: str, username: str, lang: str = "en") -> dict:
         self.db.upsert_user(user_id, username)
         user = self.db.get_user(user_id)
         coins = (user.get("coins_balance") or 0) if user else 0
 
         blocked, mins, secs = self._cooldown_check(user)
         if blocked:
-            coins_hint = "" if coins > 0 else "\n> 💡 Gana monedas jugando partidas con `/jugar`."
+            coins_hint = "" if coins > 0 else t("pack_cooldown_hint", lang)
             return {
-                "content": (
-                    f"⏳ Tu próximo sobre gratis estará disponible en **{mins}m {secs}s**.\n"
-                    f"💰 Tienes **{coins} monedas** disponibles.{coins_hint}"
-                ),
-                "components": self._x10_buttons(user_id),
+                "content": t("pack_cooldown", lang, mins=mins, secs=secs, coins=coins) + coins_hint,
+                "components": self._x10_buttons(user_id, lang),
             }
 
         return {
-            "content": f"🎴 **¡Sobre disponible!** ¿De qué banner quieres tirar?\n💰 Tienes **{coins} monedas** disponibles.",
+            "content": t("pack_available", lang, coins=coins),
             "components": [{
                 "type": 1,
                 "components": [
-                    {"type": 2, "style": 1, "label": "✨ Original Legends", "custom_id": f"sobre_banner:permanent:{user_id}"},
-                    {"type": 2, "style": 2, "label": "🆕 Next Generation", "custom_id": f"sobre_banner:rotating:{user_id}"},
+                    {"type": 2, "style": 1, "label": t("btn_pack_perm", lang), "custom_id": f"sobre_banner:permanent:{user_id}"},
+                    {"type": 2, "style": 2, "label": t("btn_pack_rot", lang), "custom_id": f"sobre_banner:rotating:{user_id}"},
                 ],
             }],
         }
 
-    async def open_sobre_banner(self, user_id: str, username: str, banner_key: str) -> dict:
+    async def open_sobre_banner(self, user_id: str, username: str, banner_key: str, lang: str = "en") -> dict:
         user = self.db.get_user(user_id)
         blocked, mins, secs = self._cooldown_check(user)
         if blocked:
-            return {"content": f"⏳ El sobre ya fue usado. Próximo disponible en **{mins}m {secs}s**.", "components": []}
+            return {"content": t("pack_already_used", lang, mins=mins, secs=secs), "components": []}
 
         existing_ids = {str(c["card_id"]) for c in self.db.get_collection(user_id)}
         banner = ALL_BANNERS.get(banner_key, PERMANENT_BANNER)
@@ -465,19 +415,19 @@ class GameManager:
         self.db.add_to_collection(user_id, cards)
         self.db.set_last_sobre(user_id)
         new_ids = {str(c["card_id"]) for c in cards if str(c["card_id"]) not in existing_ids}
-        return self._build_pull_response(cards, f"🎴 ¡Abriste un sobre! — {banner['name']}", user_id, banner_key, new_ids=new_ids)
+        return self._build_pull_response(cards, t("pack_opened", lang, banner=banner["name"]), user_id, banner_key, new_ids=new_ids, lang=lang)
 
-    async def open_sobre_x10(self, user_id: str, banner_key: str = "permanent") -> dict:
+    async def open_sobre_x10(self, user_id: str, banner_key: str = "permanent", lang: str = "en") -> dict:
         user = self.db.get_user(user_id)
         if not user:
-            return {"content": "Primero usa `/sobre` para registrarte."}
+            return {"content": t("pack_x10_no_user", lang)}
 
         coins = user.get("coins_balance") or 0
         if coins < X10_COST:
-            return {"content": f"❌ Necesitas **{X10_COST} monedas** pero tienes **{coins}**."}
+            return {"content": t("pack_x10_no_coins", lang, cost=X10_COST, coins=coins)}
 
         if not self.db.spend_coins(user_id, X10_COST):
-            return {"content": "❌ No tienes suficientes monedas."}
+            return {"content": t("pack_x10_insufficient", lang)}
 
         existing_ids = {str(c["card_id"]) for c in self.db.get_collection(user_id)}
         banner = ALL_BANNERS.get(banner_key, PERMANENT_BANNER)
@@ -486,12 +436,12 @@ class GameManager:
         new_ids = {str(c["card_id"]) for c in cards if str(c["card_id"]) not in existing_ids}
 
         new_balance = coins - X10_COST
-        result = self._build_pull_response(cards, f"🎴 ¡Abriste 10 sobres! — {banner['name']}", user_id, banner_key, new_ids=new_ids)
-        coins_note = f" · ⭐ = carta nueva" if new_ids else ""
-        result["embeds"][0]["footer"] = {"text": f"💰 Monedas restantes: {new_balance}{coins_note}"}
+        result = self._build_pull_response(cards, t("pack_x10_opened", lang, banner=banner["name"]), user_id, banner_key, new_ids=new_ids, lang=lang)
+        coins_note = f" · {t('pack_new_card_footer', lang)}" if new_ids else ""
+        result["embeds"][0]["footer"] = {"text": t("pack_coins_remaining", lang, coins=new_balance) + coins_note}
         return result
 
-    def _build_pull_response(self, cards: list[dict], header: str, user_id: str = "", banner_key: str = "permanent", new_ids: set = None) -> dict:
+    def _build_pull_response(self, cards: list[dict], header: str, user_id: str = "", banner_key: str = "permanent", new_ids: set = None, lang: str = "en") -> dict:
         rarity_order = ["secret", "ultra", "super", "rare", "common"]
         rarity_names = {"secret": "Secret Rare", "ultra": "Ultra Rare", "super": "Super Rare", "rare": "Rare", "common": "Common"}
         cards_sorted = sorted(cards, key=lambda x: rarity_order.index(x["rarity"]))
@@ -519,27 +469,26 @@ class GameManager:
                 "thumbnail": {"url": best["image_url"]},
                 "fields": fields,
                 "color": RARITY_COLORS[best["rarity"]],
-                "footer": {"text": "⭐ = carta nueva en tu colección"} if new_ids else None,
+                "footer": {"text": t("pack_new_card_footer", lang)} if new_ids else None,
             }],
-            "components": self._x10_buttons(user_id),
+            "components": self._x10_buttons(user_id, lang),
         }
 
-    async def toggle_protect_card(self, user_id: str, card_name: str) -> dict:
+    async def toggle_protect_card(self, user_id: str, card_name: str, lang: str = "en") -> dict:
         result = self.db.toggle_protect_card(user_id, card_name)
         if not result:
-            return {"content": f"❌ No tienes ninguna carta que coincida con **{card_name}** en tu colección."}
-        icon = "🔒" if result["protected"] else "🔓"
-        action = "protegida" if result["protected"] else "desprotegida"
-        return {"content": f"{icon} **{result['card_name']}** ahora está {action}."}
+            return {"content": t("protect_not_found", lang, name=card_name)}
+        key = "protect_on" if result["protected"] else "protect_off"
+        return {"content": t(key, lang, name=result["card_name"])}
 
-    async def show_sell_duplicates(self, user_id: str) -> dict:
+    async def show_sell_duplicates(self, user_id: str, lang: str = "en") -> dict:
         cards = self.db.get_collection(user_id)
         duplicates = [c for c in cards if c["count"] > 1 and not c.get("protected")]
         if not duplicates:
             protected_dups = [c for c in cards if c["count"] > 1 and c.get("protected")]
             if protected_dups:
-                return {"content": f"No tienes duplicadas vendibles. Tienes **{len(protected_dups)}** carta(s) duplicada(s) protegidas 🔒."}
-            return {"content": "No tienes cartas duplicadas para vender."}
+                return {"content": t("sell_no_duplicates_protected", lang, count=len(protected_dups))}
+            return {"content": t("sell_no_duplicates", lang)}
 
         rarity_order = ["secret", "ultra", "super", "rare", "common"]
         rarity_names = {"secret": "Secret Rare", "ultra": "Ultra Rare", "super": "Super Rare", "rare": "Rare", "common": "Common"}
@@ -548,7 +497,6 @@ class GameManager:
         total_extras = sum(c["count"] - 1 for c in duplicates_sorted)
         total_coins = sum((c["count"] - 1) * RARITY_SELL_VALUES[c["rarity"]] for c in duplicates_sorted)
 
-        # Agrupar por rareza (máximo 5 fields, evita el límite de 25 de Discord)
         grouped: dict[str, list[str]] = {r: [] for r in rarity_order}
         for c in duplicates_sorted:
             extras = c["count"] - 1
@@ -567,85 +515,58 @@ class GameManager:
                     if len("\n".join(kept + [line])) > 980:
                         break
                     kept.append(line)
-                value = "\n".join(kept) + f"\n*...y {total_r - len(kept)} más*"
+                value = "\n".join(kept) + f"\n*...and {total_r - len(kept)} more*" if lang == "en" else "\n".join(kept) + f"\n*...y {total_r - len(kept)} más*"
             fields.append({
-                "name": f"{RARITY_EMOJIS[r]} {rarity_names[r]} ({RARITY_SELL_VALUES[r]} 💰/copia)",
+                "name": f"{RARITY_EMOJIS[r]} {rarity_names[r]} ({RARITY_SELL_VALUES[r]} 💰/copy)" if lang == "en" else f"{RARITY_EMOJIS[r]} {rarity_names[r]} ({RARITY_SELL_VALUES[r]} 💰/copia)",
                 "value": value,
                 "inline": False,
             })
 
         return {
             "embeds": [{
-                "title": f"🗑️ Vender duplicadas — {total_extras} copias extra → {total_coins} monedas",
+                "title": t("sell_title", lang, extras=total_extras, coins=total_coins),
                 "fields": fields,
                 "color": 0xE74C3C,
             }],
             "components": [{
                 "type": 1,
                 "components": [
-                    {"type": 2, "style": 4, "label": f"🗑️ Confirmar venta ({total_coins} monedas)", "custom_id": f"vender_confirmar:{user_id}"},
-                    {"type": 2, "style": 2, "label": "Cancelar", "custom_id": f"vender_cancelar:{user_id}"},
+                    {"type": 2, "style": 4, "label": t("sell_confirm_btn", lang, coins=total_coins), "custom_id": f"vender_confirmar:{user_id}"},
+                    {"type": 2, "style": 2, "label": t("sell_cancel_btn", lang), "custom_id": f"vender_cancelar:{user_id}"},
                 ],
             }],
         }
 
-    async def confirm_sell_duplicates(self, user_id: str) -> dict:
+    async def confirm_sell_duplicates(self, user_id: str, lang: str = "en") -> dict:
         coins_earned = self.db.sell_duplicates(user_id, RARITY_SELL_VALUES)
         if coins_earned == 0:
-            return {"embeds": [{"title": "No había duplicadas para vender.", "color": 0x9D9D9D}], "components": []}
+            return {"embeds": [{"title": t("sell_nothing", lang), "color": 0x9D9D9D}], "components": []}
         user = self.db.get_user(user_id)
         new_balance = user.get("coins_balance") or 0
         return {
             "embeds": [{
-                "title": f"✅ Vendiste tus duplicadas",
-                "description": f"Ganaste **{coins_earned} monedas** 💰\nSaldo actual: **{new_balance} monedas**",
+                "title": t("sell_done_title", lang),
+                "description": t("sell_done_desc", lang, coins=coins_earned, balance=new_balance),
                 "color": 0x2ECC71,
             }],
             "components": [],
         }
 
-    async def get_help(self) -> dict:
+    async def get_help(self, lang: str = "en") -> dict:
         return {
             "embeds": [{
-                "title": "📖 Comandos de YGOGuesser",
+                "title": t("help_title", lang),
                 "color": 0x3498DB,
                 "fields": [
-                    {
-                        "name": "🎮 Juego",
-                        "value": (
-                            "`/jugar` — Inicia una partida (elige modo)\n"
-                            "`/adivinar carta:<nombre>` — Adivina la carta actual\n"
-                            "`/pista` — Revela la siguiente pista (modo Pistas)\n"
-                            "`/zoom-pista` — Avanza al siguiente zoom (modo Zoom)\n"
-                            "`/rendirse` — Abandona la partida actual\n"
-                            "`/ranking` — Top 10 de jugadores"
-                        ),
-                        "inline": False,
-                    },
-                    {
-                        "name": "🎴 Gacha",
-                        "value": (
-                            "`/sobre` — Abre un sobre gratis (1 vez por hora)\n"
-                            "`/coleccion` — Ve tus cartas conseguidas\n"
-                            "`/vender` — Vende tus cartas duplicadas por monedas\n"
-                            "`/gacha` — Info del banner actual y probabilidades"
-                        ),
-                        "inline": False,
-                    },
-                    {
-                        "name": "💰 Monedas",
-                        "value": (
-                            "Ganas monedas jugando partidas — son los mismos puntos del ranking "
-                            "pero se guardan por separado. Gastarlas **no baja tu posición**."
-                        ),
-                        "inline": False,
-                    },
+                    {"name": t("help_game_title", lang), "value": t("help_game_value", lang), "inline": False},
+                    {"name": t("help_gacha_title", lang), "value": t("help_gacha_value", lang), "inline": False},
+                    {"name": t("help_coins_title", lang), "value": t("help_coins_value", lang), "inline": False},
                 ],
-                "footer": {"text": "YGOGuesser • ygoguesser.vercel.app"},
+                "footer": {"text": t("help_footer", lang)},
             }]
         }
 
-    async def get_gacha_info(self, user_id: str) -> dict:
+    async def get_gacha_info(self, user_id: str, lang: str = "en") -> dict:
         rarity_names = {"secret": "Secret Rare", "ultra": "Ultra Rare", "super": "Super Rare", "rare": "Rare", "common": "Common"}
 
         owned_ids = {str(c["card_id"]) for c in self.db.get_collection(user_id)}
@@ -660,49 +581,38 @@ class GameManager:
             total = sum(len(banner.get(r, [])) for r in ("secret", "ultra", "super", "rare", "common"))
             missing = sum(1 for r in ("secret", "ultra", "super", "rare", "common") for c in banner.get(r, []) if str(c["id"]) not in owned_ids)
             if missing == 0:
-                return "✅ Colección completa"
-            return f"📋 Te faltan **{missing}/{total}** cartas"
+                return t("gacha_complete", lang)
+            return t("gacha_missing", lang, missing=missing, total=total)
 
         embeds = []
-        for label, banner in [("🔄 Banner rotativo", ROTATING_BANNER), ("♾️ Banner permanente", PERMANENT_BANNER)]:
+        for label_key, banner in [("gacha_banner_rotating", ROTATING_BANNER), ("gacha_banner_permanent", PERMANENT_BANNER)]:
             embed = {
-                "title": f"🎴 {label}: {banner['name']}",
-                "description": (
-                    f"**Probabilidades:**\n"
-                    f"{RARITY_EMOJIS['secret']} Secret Rare — 1%\n"
-                    f"{RARITY_EMOJIS['ultra']} Ultra Rare — 4%\n"
-                    f"{RARITY_EMOJIS['super']} Super Rare — 15%\n"
-                    f"{RARITY_EMOJIS['rare']} Rare — 30%\n"
-                    f"{RARITY_EMOJIS['common']} Common — 50%\n\n"
-                    f"**Pool:** {pool_line(banner)}\n"
-                    f"{missing_summary(banner)}"
-                ),
+                "title": f"🎴 {t(label_key, lang)}: {banner['name']}",
+                "description": t("gacha_probs", lang,
+                    secret=RARITY_EMOJIS["secret"], ultra=RARITY_EMOJIS["ultra"],
+                    super=RARITY_EMOJIS["super"], rare=RARITY_EMOJIS["rare"],
+                    common=RARITY_EMOJIS["common"], pool_line=pool_line(banner),
+                    missing_summary=missing_summary(banner)),
                 "color": 0xFFD700,
             }
             if banner.get("image_url"):
                 embed["image"] = {"url": banner["image_url"]}
             embeds.append(embed)
 
-        embeds[0]["description"] = (
-            "**¿Cómo funciona?**\n"
-            "Ganas **monedas** jugando — se guardan por separado del ranking, gastarlas no baja tu posición.\n\n"
-            f"🆓 **`/sobre`** — 5 cartas gratis cada hora (elige banner)\n"
-            f"💰 **x10** — 10 cartas por **{X10_COST} monedas**, garantiza al menos 1 Ultra Rare\n\n"
-            "🔗 [Ver todas las cartas del pool](https://ygoguesser.vercel.app/banner)\n\n"
-        ) + embeds[0]["description"]
+        embeds[0]["description"] = t("gacha_how_it_works", lang, cost=X10_COST) + embeds[0]["description"]
 
         return {
             "embeds": embeds,
             "components": [{
                 "type": 1,
                 "components": [
-                    {"type": 2, "style": 2, "label": "📋 Faltantes Next Generation", "custom_id": "faltan:rotating"},
-                    {"type": 2, "style": 2, "label": "📋 Faltantes Original Legends", "custom_id": "faltan:permanent"},
+                    {"type": 2, "style": 2, "label": t("btn_missing_rot", lang), "custom_id": "faltan:rotating"},
+                    {"type": 2, "style": 2, "label": t("btn_missing_perm", lang), "custom_id": "faltan:permanent"},
                 ],
             }],
         }
 
-    async def get_missing_cards(self, user_id: str, banner_key: str, page: int = 0) -> dict:
+    async def get_missing_cards(self, user_id: str, banner_key: str, page: int = 0, lang: str = "en") -> dict:
         banner = ALL_BANNERS.get(banner_key, PERMANENT_BANNER)
         owned_ids = {str(c["card_id"]) for c in self.db.get_collection(user_id)}
 
@@ -717,7 +627,7 @@ class GameManager:
         ]
 
         if not missing:
-            return {"content": f"✅ ¡Tienes todas las cartas del banner **{banner['name']}**!"}
+            return {"content": t("missing_complete", lang, banner=banner["name"])}
 
         page_size = 15
         total_pages = max(1, (len(missing) + page_size - 1) // page_size)
@@ -734,10 +644,10 @@ class GameManager:
         ]
 
         embed = {
-            "title": f"📋 Faltantes — {banner['name']} ({len(missing)} restantes)",
+            "title": t("missing_title", lang, banner=banner["name"], count=len(missing)),
             "fields": fields,
             "color": 0x95A5A6,
-            "footer": {"text": f"Página {page + 1} / {total_pages}"},
+            "footer": {"text": f"Page {page + 1} / {total_pages}" if lang == "en" else f"Página {page + 1} / {total_pages}"},
         }
 
         buttons = []
@@ -749,10 +659,10 @@ class GameManager:
 
         return {"embeds": [embed], "components": [{"type": 1, "components": buttons}]}
 
-    async def get_collection(self, user_id: str, page: int = 0) -> dict:
+    async def get_collection(self, user_id: str, page: int = 0, lang: str = "en") -> dict:
         cards = self.db.get_collection(user_id)
         if not cards:
-            return {"content": "No tienes cartas aún. Usa `/sobre` para abrir tu primer sobre."}
+            return {"content": t("collection_empty", lang)}
 
         banner_abbrevs = {"permanent": "OL", "rotating": "NG"}
         card_banner: dict[str, str] = {}
@@ -788,19 +698,15 @@ class GameManager:
             value = "\n".join(grouped[r])
             if len(value) > 1024:
                 value = value[:1021] + "..."
-            fields.append({
-                "name": f"{RARITY_EMOJIS[r]} {rarity_names[r]}",
-                "value": value,
-                "inline": False,
-            })
+            fields.append({"name": f"{RARITY_EMOJIS[r]} {rarity_names[r]}", "value": value, "inline": False})
 
         best = page_cards[0]
         embed = {
-            "title": f"📦 Colección — {total_unique} únicas · {total_copies} copias",
+            "title": t("collection_title", lang, unique=total_unique, copies=total_copies),
             "thumbnail": {"url": best.get("image_url", "")},
             "fields": fields,
             "color": RARITY_COLORS[best["rarity"]],
-            "footer": {"text": f"Página {page + 1} / {total_pages}  •  Usa /sobre para conseguir más cartas"},
+            "footer": {"text": t("collection_footer", lang, page=page + 1, total=total_pages)},
         }
 
         buttons = []
@@ -812,16 +718,16 @@ class GameManager:
 
         return {"embeds": [embed], "components": [{"type": 1, "components": buttons}]}
 
-    def _ranking_buttons(self, current: str) -> list:
+    def _ranking_buttons(self, current: str, lang: str = "en") -> list:
         return [{
             "type": 1,
             "components": [
-                {"type": 2, "style": 1 if current == "score" else 2, "label": "🏆 Puntos", "custom_id": "ranking_mode:score", "disabled": current == "score"},
-                {"type": 2, "style": 1 if current == "collection" else 2, "label": "📦 Colección", "custom_id": "ranking_mode:collection", "disabled": current == "collection"},
+                {"type": 2, "style": 1 if current == "score" else 2, "label": t("btn_ranking_score", lang), "custom_id": "ranking_mode:score", "disabled": current == "score"},
+                {"type": 2, "style": 1 if current == "collection" else 2, "label": t("btn_ranking_collection", lang), "custom_id": "ranking_mode:collection", "disabled": current == "collection"},
             ],
         }]
 
-    async def get_ranking(self, mode: str = "score") -> dict:
+    async def get_ranking(self, mode: str = "score", lang: str = "en") -> dict:
         medals = ["🥇", "🥈", "🥉"]
 
         if mode == "collection":
@@ -834,121 +740,120 @@ class GameManager:
             total = len(banner_card_ids)
             rows = self.db.get_collection_ranking(banner_card_ids)
             if not rows:
-                return {"content": "Todavía nadie tiene cartas.", "components": self._ranking_buttons("collection")}
+                return {"content": t("ranking_empty_collection", lang), "components": self._ranking_buttons("collection", lang)}
             lines = []
             for i, row in enumerate(rows):
                 medal = medals[i] if i < 3 else f"{i + 1}."
                 pct = round(row["unique_count"] / total * 100)
                 lines.append(f"{medal} **{row['username']}** — {row['unique_count']}/{total} ({pct}%)")
             return {
-                "embeds": [{"title": "📦 Ranking Colección — Todos los banners", "description": "\n".join(lines), "color": 0xFFD700, "footer": {"text": f"{total} cartas únicas en total"}}],
-                "components": self._ranking_buttons("collection"),
+                "embeds": [{"title": t("ranking_title_collection", lang), "description": "\n".join(lines), "color": 0xFFD700, "footer": {"text": t("ranking_collection_footer", lang, total=total)}}],
+                "components": self._ranking_buttons("collection", lang),
             }
 
         rows = self.db.get_ranking()
         if not rows:
-            return {"content": "Todavía no hay partidas registradas.", "components": self._ranking_buttons("score")}
+            return {"content": t("ranking_empty_score", lang), "components": self._ranking_buttons("score", lang)}
         lines = []
         for i, row in enumerate(rows):
             medal = medals[i] if i < 3 else f"{i + 1}."
             win_rate = round(row["games_won"] / row["games_played"] * 100) if row["games_played"] > 0 else 0
-            lines.append(f"{medal} **{row['username']}** — {row['total_score']} pts ({row['games_won']}/{row['games_played']} ganadas, {win_rate}% win rate)")
+            lines.append(f"{medal} **{row['username']}** — {row['total_score']} pts ({row['games_won']}/{row['games_played']} won, {win_rate}% win rate)" if lang == "en" else f"{medal} **{row['username']}** — {row['total_score']} pts ({row['games_won']}/{row['games_played']} ganadas, {win_rate}% win rate)")
         return {
-            "embeds": [{"title": "🏆 Ranking — Top 10 Puntos", "description": "\n".join(lines), "color": 0xF1C40F}],
-            "components": self._ranking_buttons("score"),
+            "embeds": [{"title": t("ranking_title_score", lang), "description": "\n".join(lines), "color": 0xF1C40F}],
+            "components": self._ranking_buttons("score", lang),
         }
 
-    async def initiate_trade(self, from_user_id: str, to_user_id: str, from_card_name: str, to_card_name: str) -> dict:
+    async def initiate_trade(self, from_user_id: str, to_user_id: str, from_card_name: str, to_card_name: str, lang: str = "en") -> dict:
         if from_user_id == to_user_id:
-            return {"content": "❌ No puedes intercambiar cartas contigo mismo."}
+            return {"content": t("trade_self", lang)}
 
         from_card = self.db.get_collection_card(from_user_id, from_card_name)
         if not from_card:
-            return {"content": f"❌ No tienes ninguna carta que coincida con **{from_card_name}**."}
+            return {"content": t("trade_no_from_card", lang, name=from_card_name)}
         if from_card.get("protected"):
-            return {"content": f"❌ **{from_card['card_name']}** está protegida. Desprotégela primero con `/proteger`."}
+            return {"content": t("trade_from_protected", lang, name=from_card["card_name"])}
 
         to_card = self.db.get_collection_card(to_user_id, to_card_name)
         if not to_card:
-            return {"content": f"❌ <@{to_user_id}> no tiene ninguna carta que coincida con **{to_card_name}**."}
+            return {"content": t("trade_no_to_card", lang, user=to_user_id, name=to_card_name)}
         if to_card.get("protected"):
-            return {"content": f"❌ La carta **{to_card['card_name']}** de <@{to_user_id}> está protegida."}
+            return {"content": t("trade_to_protected", lang, name=to_card["card_name"], user=to_user_id)}
 
         trade = self.db.create_trade(from_user_id, from_card, to_user_id, to_card)
         trade_id = trade["id"]
 
         return {
-            "content": f"<@{to_user_id}> — <@{from_user_id}> te propone un intercambio:",
+            "content": t("trade_offer", lang, to=to_user_id, from_=from_user_id),
             "embeds": [{
                 "color": 0x3498DB,
                 "fields": [
-                    {"name": "📤 Ofrece", "value": f"{RARITY_EMOJIS[from_card['rarity']]} **{from_card['card_name']}**", "inline": True},
-                    {"name": "📥 Pide", "value": f"{RARITY_EMOJIS[to_card['rarity']]} **{to_card['card_name']}**", "inline": True},
+                    {"name": t("trade_offers", lang), "value": f"{RARITY_EMOJIS[from_card['rarity']]} **{from_card['card_name']}**", "inline": True},
+                    {"name": t("trade_wants", lang), "value": f"{RARITY_EMOJIS[to_card['rarity']]} **{to_card['card_name']}**", "inline": True},
                 ],
             }],
             "components": [{
                 "type": 1,
                 "components": [
-                    {"type": 2, "style": 3, "label": "✅ Aceptar", "custom_id": f"trade_accept:{trade_id}:{to_user_id}"},
-                    {"type": 2, "style": 4, "label": "❌ Rechazar", "custom_id": f"trade_reject:{trade_id}:{to_user_id}"},
+                    {"type": 2, "style": 3, "label": t("btn_trade_accept", lang), "custom_id": f"trade_accept:{trade_id}:{to_user_id}"},
+                    {"type": 2, "style": 4, "label": t("btn_trade_reject", lang), "custom_id": f"trade_reject:{trade_id}:{to_user_id}"},
                 ],
             }],
         }
 
-    async def accept_trade(self, trade_id: str, user_id: str) -> dict:
+    async def accept_trade(self, trade_id: str, user_id: str, lang: str = "en") -> dict:
         trade = self.db.get_trade(trade_id)
         if not trade:
-            return {"content": "❌ Intercambio no encontrado.", "components": []}
+            return {"content": t("trade_not_found", lang), "components": []}
         if trade["status"] != "pending":
-            return {"content": "❌ Este intercambio ya no está activo.", "components": []}
+            return {"content": t("trade_not_active", lang), "components": []}
 
         success = self.db.complete_trade(trade_id)
         if not success:
-            return {"content": "❌ El intercambio falló. Alguno de los dos ya no tiene la carta.", "embeds": [], "components": []}
+            return {"content": t("trade_failed", lang), "embeds": [], "components": []}
 
         return {
-            "content": (
-                f"✅ ¡Intercambio completado!\n"
-                f"<@{trade['from_user_id']}> recibió **{trade['to_card_name']}**\n"
-                f"<@{trade['to_user_id']}> recibió **{trade['from_card_name']}**"
-            ),
+            "content": t("trade_completed", lang, from_=trade["from_user_id"], to_card=trade["to_card_name"], to=trade["to_user_id"], from_card=trade["from_card_name"]),
             "embeds": [],
             "components": [],
         }
 
-    async def reject_trade(self, trade_id: str, user_id: str) -> dict:
+    async def reject_trade(self, trade_id: str, user_id: str, lang: str = "en") -> dict:
         trade = self.db.get_trade(trade_id)
         if not trade:
-            return {"content": "❌ Intercambio no encontrado.", "components": []}
+            return {"content": t("trade_not_found", lang), "components": []}
         if trade["status"] != "pending":
-            return {"content": "❌ Este intercambio ya no está activo.", "components": []}
+            return {"content": t("trade_not_active", lang), "components": []}
 
         self.db.cancel_trade(trade_id)
-        return {
-            "content": f"❌ <@{user_id}> rechazó el intercambio.",
-            "embeds": [],
-            "components": [],
-        }
+        return {"content": t("trade_rejected", lang, user=user_id), "embeds": [], "components": []}
 
-    async def handle_config(self, guild_id: str, accion: str, command: str | None, channel_id: str | None) -> dict:
-        if accion == "ver":
+    async def handle_config(self, guild_id: str, accion: str, command: str | None, channel_id: str | None, language: str | None, lang: str = "en") -> dict:
+        if language:
+            if language not in ("en", "es"):
+                return {"content": "❌ Valid languages: `en`, `es`."}
+            self.db.set_guild_language(guild_id, language)
+            label = "English" if language == "en" else "Español"
+            return {"content": t("config_lang_set", lang, lang=label)}
+
+        if accion == "ver" or accion == "view":
             locks = self.db.get_all_channel_locks(guild_id)
             if not locks:
-                return {"content": "No hay comandos bloqueados a ningún canal."}
+                return {"content": t("config_no_locks", lang)}
             lines = [f"`/{r['command']}` → <#{r['channel_id']}>" for r in locks]
-            return {"embeds": [{"title": "🔒 Canales configurados", "description": "\n".join(lines), "color": 0x3498DB}]}
+            return {"embeds": [{"title": t("config_locks_title", lang), "description": "\n".join(lines), "color": 0x3498DB}]}
 
         if not command:
-            return {"content": "❌ Debes especificar un comando."}
+            return {"content": t("config_no_command", lang)}
 
-        if accion == "lockear":
+        if accion in ("lock", "lockear"):
             if not channel_id:
-                return {"content": "❌ Debes especificar un canal."}
+                return {"content": t("config_no_channel", lang)}
             self.db.set_command_channel(guild_id, command, channel_id)
-            return {"content": f"✅ `/{command}` ahora solo puede usarse en <#{channel_id}>."}
+            return {"content": t("config_locked", lang, cmd=command, channel=channel_id)}
 
-        if accion == "desbloquear":
+        if accion in ("unlock", "desbloquear"):
             self.db.remove_command_channel(guild_id, command)
-            return {"content": f"✅ `/{command}` ya no tiene restricción de canal."}
+            return {"content": t("config_unlocked", lang, cmd=command)}
 
-        return {"content": "❌ Acción no reconocida."}
+        return {"content": t("config_bad_action", lang)}
