@@ -299,7 +299,8 @@ async def home():
       </style>
     </head>
     <body>
-      <h1>🎴 YGOGuesser</h1>
+      <img src="https://i.imgur.com/HEF1czj.png" alt="YGOGuesser" style="width:180px;height:180px;border-radius:50%;margin-bottom:24px;box-shadow:0 0 40px rgba(255,215,0,0.3)">
+      <h1>YGOGuesser</h1>
       <p class="sub">A Yu-Gi-Oh! Discord bot. Guess cards, collect them, trade with friends.</p>
 
       <div class="cards">
