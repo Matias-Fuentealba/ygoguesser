@@ -187,7 +187,7 @@ STRINGS = {
         "config_unlocked": "✅ `/{cmd}` no longer has a channel restriction.",
         "config_bad_action": "❌ Unrecognized action.",
         "config_no_admin": "❌ Only administrators can use this command.",
-        "config_lang_set": "✅ Bot language set to **{lang}**.",
+        "config_lang_set": "✅ Bot language set to **{label}**.",
 
         # help
         "help_title": "📖 YGOGuesser Commands",
@@ -437,7 +437,7 @@ STRINGS = {
         "config_unlocked": "✅ `/{cmd}` ya no tiene restricción de canal.",
         "config_bad_action": "❌ Acción no reconocida.",
         "config_no_admin": "❌ Solo los administradores pueden usar este comando.",
-        "config_lang_set": "✅ Idioma del bot configurado a **{lang}**.",
+        "config_lang_set": "✅ Idioma del bot configurado a **{label}**.",
 
         # help
         "help_title": "📖 Comandos de YGOGuesser",

@@ -834,7 +834,7 @@ class GameManager:
                 return {"content": "❌ Valid languages: `en`, `es`."}
             self.db.set_guild_language(guild_id, language)
             label = "English" if language == "en" else "Español"
-            return {"content": t("config_lang_set", lang, lang=label)}
+            return {"content": t("config_lang_set", lang, label=label)}
 
         if accion == "ver" or accion == "view":
             locks = self.db.get_all_channel_locks(guild_id)
