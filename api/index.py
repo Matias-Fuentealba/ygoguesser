@@ -115,13 +115,19 @@ async def process_command(payload: dict, token: str):
         elif command == "coleccion":
             response = await gm.get_collection(user_id)
         elif command == "gacha":
-            response = await gm.get_gacha_info()
+            response = await gm.get_gacha_info(user_id)
         elif command == "vender":
             response = await gm.show_sell_duplicates(user_id)
         elif command == "proteger":
             options = payload["data"].get("options", [])
             card_name = options[0]["value"] if options else ""
             response = await gm.toggle_protect_card(user_id, card_name)
+        elif command == "intercambiar":
+            opts = {o["name"]: o["value"] for o in payload["data"].get("options", [])}
+            to_user_id = opts.get("usuario", "")
+            from_card_name = opts.get("mi_carta", "")
+            to_card_name = opts.get("su_carta", "")
+            response = await gm.initiate_trade(user_id, to_user_id, from_card_name, to_card_name)
         elif command == "help":
             response = await gm.get_help()
         elif command == "config":
@@ -194,6 +200,27 @@ async def process_component(payload: dict, token: str):
         elif custom_id.startswith("ranking_mode:"):
             mode = custom_id.split(":")[1]
             response = await gm.get_ranking(mode)
+        elif custom_id.startswith("faltan:"):
+            banner_key = custom_id.split(":")[1]
+            response = await gm.get_missing_cards(user_id, banner_key)
+        elif custom_id.startswith("faltan_page:"):
+            parts = custom_id.split(":")
+            banner_key, page = parts[1], int(parts[2])
+            response = await gm.get_missing_cards(user_id, banner_key, page)
+        elif custom_id.startswith("trade_accept:"):
+            parts = custom_id.split(":", 2)
+            trade_id, owner_id = parts[1], parts[2]
+            if user_id != owner_id:
+                response = {"content": "❌ Solo el usuario al que se le propuso el intercambio puede aceptarlo."}
+            else:
+                response = await gm.accept_trade(trade_id, user_id)
+        elif custom_id.startswith("trade_reject:"):
+            parts = custom_id.split(":", 2)
+            trade_id, owner_id = parts[1], parts[2]
+            if user_id != owner_id:
+                response = {"content": "❌ Solo el usuario al que se le propuso el intercambio puede rechazarlo."}
+            else:
+                response = await gm.reject_trade(trade_id, user_id)
         else:
             response = "Acción no reconocida."
     except Exception as e:
@@ -340,7 +367,10 @@ async def interactions(request: Request, background_tasks: BackgroundTasks):
             custom_id.startswith("vender_cancelar:") or
             custom_id.startswith("gacha_x10:") or
             custom_id.startswith("ranking_mode:") or
-            custom_id.startswith("sobre_banner:")
+            custom_id.startswith("sobre_banner:") or
+            custom_id.startswith("faltan_page:") or
+            custom_id.startswith("trade_accept:") or
+            custom_id.startswith("trade_reject:")
         )
         response_type = 6 if updates_in_place else 5
         return JSONResponse({"type": response_type})

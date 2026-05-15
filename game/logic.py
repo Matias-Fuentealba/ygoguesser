@@ -459,11 +459,13 @@ class GameManager:
         if blocked:
             return {"content": f"⏳ El sobre ya fue usado. Próximo disponible en **{mins}m {secs}s**.", "components": []}
 
+        existing_ids = {str(c["card_id"]) for c in self.db.get_collection(user_id)}
         banner = ALL_BANNERS.get(banner_key, PERMANENT_BANNER)
         cards = pull_free(banner)
         self.db.add_to_collection(user_id, cards)
         self.db.set_last_sobre(user_id)
-        return self._build_pull_response(cards, f"🎴 ¡Abriste un sobre! — {banner['name']}", user_id, banner_key)
+        new_ids = {str(c["card_id"]) for c in cards if str(c["card_id"]) not in existing_ids}
+        return self._build_pull_response(cards, f"🎴 ¡Abriste un sobre! — {banner['name']}", user_id, banner_key, new_ids=new_ids)
 
     async def open_sobre_x10(self, user_id: str, banner_key: str = "permanent") -> dict:
         user = self.db.get_user(user_id)
@@ -477,32 +479,47 @@ class GameManager:
         if not self.db.spend_coins(user_id, X10_COST):
             return {"content": "❌ No tienes suficientes monedas."}
 
+        existing_ids = {str(c["card_id"]) for c in self.db.get_collection(user_id)}
         banner = ALL_BANNERS.get(banner_key, PERMANENT_BANNER)
         cards = pull_x10(banner)
         self.db.add_to_collection(user_id, cards)
+        new_ids = {str(c["card_id"]) for c in cards if str(c["card_id"]) not in existing_ids}
 
         new_balance = coins - X10_COST
-        result = self._build_pull_response(cards, f"🎴 ¡Abriste 10 sobres! — {banner['name']}", user_id, banner_key)
-        result["embeds"][0]["footer"] = {"text": f"💰 Monedas restantes: {new_balance}"}
+        result = self._build_pull_response(cards, f"🎴 ¡Abriste 10 sobres! — {banner['name']}", user_id, banner_key, new_ids=new_ids)
+        coins_note = f" · ⭐ = carta nueva" if new_ids else ""
+        result["embeds"][0]["footer"] = {"text": f"💰 Monedas restantes: {new_balance}{coins_note}"}
         return result
 
-    def _build_pull_response(self, cards: list[dict], header: str, user_id: str = "", banner_key: str = "permanent") -> dict:
+    def _build_pull_response(self, cards: list[dict], header: str, user_id: str = "", banner_key: str = "permanent", new_ids: set = None) -> dict:
         rarity_order = ["secret", "ultra", "super", "rare", "common"]
         rarity_names = {"secret": "Secret Rare", "ultra": "Ultra Rare", "super": "Super Rare", "rare": "Rare", "common": "Common"}
         cards_sorted = sorted(cards, key=lambda x: rarity_order.index(x["rarity"]))
+        new_ids = new_ids or set()
+
+        grouped: dict[str, list[str]] = {}
+        for c in cards_sorted:
+            star = " ⭐" if str(c["card_id"]) in new_ids else ""
+            grouped.setdefault(c["rarity"], []).append(f"{c['name']}{star}")
+
+        fields = []
+        for r in rarity_order:
+            if r not in grouped:
+                continue
+            fields.append({
+                "name": f"{RARITY_EMOJIS[r]} {rarity_names[r]}",
+                "value": "\n".join(grouped[r]),
+                "inline": False,
+            })
 
         best = cards_sorted[0]
-        fields = [
-            {"name": f"{RARITY_EMOJIS[c['rarity']]} {c['name']}", "value": rarity_names[c["rarity"]], "inline": True}
-            for c in cards_sorted
-        ]
-
         return {
             "embeds": [{
                 "title": header.strip(),
                 "thumbnail": {"url": best["image_url"]},
                 "fields": fields,
                 "color": RARITY_COLORS[best["rarity"]],
+                "footer": {"text": "⭐ = carta nueva en tu colección"} if new_ids else None,
             }],
             "components": self._x10_buttons(user_id),
         }
@@ -628,14 +645,23 @@ class GameManager:
             }]
         }
 
-    async def get_gacha_info(self) -> dict:
+    async def get_gacha_info(self, user_id: str) -> dict:
         rarity_names = {"secret": "Secret Rare", "ultra": "Ultra Rare", "super": "Super Rare", "rare": "Rare", "common": "Common"}
+
+        owned_ids = {str(c["card_id"]) for c in self.db.get_collection(user_id)}
 
         def pool_line(banner: dict) -> str:
             return "  ".join(
                 f"{RARITY_EMOJIS[r]} {rarity_names[r]}: {len(banner.get(r, []))}"
                 for r in ("secret", "ultra", "super", "rare", "common")
             )
+
+        def missing_summary(banner: dict) -> str:
+            total = sum(len(banner.get(r, [])) for r in ("secret", "ultra", "super", "rare", "common"))
+            missing = sum(1 for r in ("secret", "ultra", "super", "rare", "common") for c in banner.get(r, []) if str(c["id"]) not in owned_ids)
+            if missing == 0:
+                return "✅ Colección completa"
+            return f"📋 Te faltan **{missing}/{total}** cartas"
 
         embeds = []
         for label, banner in [("🔄 Banner rotativo", ROTATING_BANNER), ("♾️ Banner permanente", PERMANENT_BANNER)]:
@@ -648,7 +674,8 @@ class GameManager:
                     f"{RARITY_EMOJIS['super']} Super Rare — 15%\n"
                     f"{RARITY_EMOJIS['rare']} Rare — 30%\n"
                     f"{RARITY_EMOJIS['common']} Common — 50%\n\n"
-                    f"**Pool:** {pool_line(banner)}"
+                    f"**Pool:** {pool_line(banner)}\n"
+                    f"{missing_summary(banner)}"
                 ),
                 "color": 0xFFD700,
             }
@@ -659,12 +686,68 @@ class GameManager:
         embeds[0]["description"] = (
             "**¿Cómo funciona?**\n"
             "Ganas **monedas** jugando — se guardan por separado del ranking, gastarlas no baja tu posición.\n\n"
-            f"🆓 **`/sobre`** — 5 cartas gratis cada hora (elegís banner)\n"
+            f"🆓 **`/sobre`** — 5 cartas gratis cada hora (elige banner)\n"
             f"💰 **x10** — 10 cartas por **{X10_COST} monedas**, garantiza al menos 1 Ultra Rare\n\n"
             "🔗 [Ver todas las cartas del pool](https://ygoguesser.vercel.app/banner)\n\n"
         ) + embeds[0]["description"]
 
-        return {"embeds": embeds}
+        return {
+            "embeds": embeds,
+            "components": [{
+                "type": 1,
+                "components": [
+                    {"type": 2, "style": 2, "label": "📋 Faltantes Next Generation", "custom_id": "faltan:rotating"},
+                    {"type": 2, "style": 2, "label": "📋 Faltantes Original Legends", "custom_id": "faltan:permanent"},
+                ],
+            }],
+        }
+
+    async def get_missing_cards(self, user_id: str, banner_key: str, page: int = 0) -> dict:
+        banner = ALL_BANNERS.get(banner_key, PERMANENT_BANNER)
+        owned_ids = {str(c["card_id"]) for c in self.db.get_collection(user_id)}
+
+        rarity_order = ["secret", "ultra", "super", "rare", "common"]
+        rarity_names = {"secret": "Secret Rare", "ultra": "Ultra Rare", "super": "Super Rare", "rare": "Rare", "common": "Common"}
+
+        missing = [
+            {"rarity": r, "name": c["name"]}
+            for r in rarity_order
+            for c in banner.get(r, [])
+            if str(c["id"]) not in owned_ids
+        ]
+
+        if not missing:
+            return {"content": f"✅ ¡Tienes todas las cartas del banner **{banner['name']}**!"}
+
+        page_size = 15
+        total_pages = max(1, (len(missing) + page_size - 1) // page_size)
+        page = max(0, min(page, total_pages - 1))
+        page_cards = missing[page * page_size:(page + 1) * page_size]
+
+        grouped: dict[str, list[str]] = {}
+        for c in page_cards:
+            grouped.setdefault(c["rarity"], []).append(c["name"])
+
+        fields = [
+            {"name": f"{RARITY_EMOJIS[r]} {rarity_names[r]}", "value": "\n".join(grouped[r]), "inline": False}
+            for r in rarity_order if r in grouped
+        ]
+
+        embed = {
+            "title": f"📋 Faltantes — {banner['name']} ({len(missing)} restantes)",
+            "fields": fields,
+            "color": 0x95A5A6,
+            "footer": {"text": f"Página {page + 1} / {total_pages}"},
+        }
+
+        buttons = []
+        if page > 0:
+            buttons.append({"type": 2, "style": 2, "label": "◀", "custom_id": f"faltan_page:{banner_key}:{page - 1}"})
+        buttons.append({"type": 2, "style": 2, "label": f"{page + 1} / {total_pages}", "custom_id": "faltan_noop", "disabled": True})
+        if page < total_pages - 1:
+            buttons.append({"type": 2, "style": 1, "label": "▶", "custom_id": f"faltan_page:{banner_key}:{page + 1}"})
+
+        return {"embeds": [embed], "components": [{"type": 1, "components": buttons}]}
 
     async def get_collection(self, user_id: str, page: int = 0) -> dict:
         cards = self.db.get_collection(user_id)
@@ -773,6 +856,78 @@ class GameManager:
         return {
             "embeds": [{"title": "🏆 Ranking — Top 10 Puntos", "description": "\n".join(lines), "color": 0xF1C40F}],
             "components": self._ranking_buttons("score"),
+        }
+
+    async def initiate_trade(self, from_user_id: str, to_user_id: str, from_card_name: str, to_card_name: str) -> dict:
+        if from_user_id == to_user_id:
+            return {"content": "❌ No puedes intercambiar cartas contigo mismo."}
+
+        from_card = self.db.get_collection_card(from_user_id, from_card_name)
+        if not from_card:
+            return {"content": f"❌ No tienes ninguna carta que coincida con **{from_card_name}**."}
+        if from_card.get("protected"):
+            return {"content": f"❌ **{from_card['card_name']}** está protegida. Desprotégela primero con `/proteger`."}
+
+        to_card = self.db.get_collection_card(to_user_id, to_card_name)
+        if not to_card:
+            return {"content": f"❌ <@{to_user_id}> no tiene ninguna carta que coincida con **{to_card_name}**."}
+        if to_card.get("protected"):
+            return {"content": f"❌ La carta **{to_card['card_name']}** de <@{to_user_id}> está protegida."}
+
+        trade = self.db.create_trade(from_user_id, from_card, to_user_id, to_card)
+        trade_id = trade["id"]
+
+        return {
+            "content": f"<@{to_user_id}> — <@{from_user_id}> te propone un intercambio:",
+            "embeds": [{
+                "color": 0x3498DB,
+                "fields": [
+                    {"name": "📤 Ofrece", "value": f"{RARITY_EMOJIS[from_card['rarity']]} **{from_card['card_name']}**", "inline": True},
+                    {"name": "📥 Pide", "value": f"{RARITY_EMOJIS[to_card['rarity']]} **{to_card['card_name']}**", "inline": True},
+                ],
+            }],
+            "components": [{
+                "type": 1,
+                "components": [
+                    {"type": 2, "style": 3, "label": "✅ Aceptar", "custom_id": f"trade_accept:{trade_id}:{to_user_id}"},
+                    {"type": 2, "style": 4, "label": "❌ Rechazar", "custom_id": f"trade_reject:{trade_id}:{to_user_id}"},
+                ],
+            }],
+        }
+
+    async def accept_trade(self, trade_id: str, user_id: str) -> dict:
+        trade = self.db.get_trade(trade_id)
+        if not trade:
+            return {"content": "❌ Intercambio no encontrado.", "components": []}
+        if trade["status"] != "pending":
+            return {"content": "❌ Este intercambio ya no está activo.", "components": []}
+
+        success = self.db.complete_trade(trade_id)
+        if not success:
+            return {"content": "❌ El intercambio falló. Alguno de los dos ya no tiene la carta.", "embeds": [], "components": []}
+
+        return {
+            "content": (
+                f"✅ ¡Intercambio completado!\n"
+                f"<@{trade['from_user_id']}> recibió **{trade['to_card_name']}**\n"
+                f"<@{trade['to_user_id']}> recibió **{trade['from_card_name']}**"
+            ),
+            "embeds": [],
+            "components": [],
+        }
+
+    async def reject_trade(self, trade_id: str, user_id: str) -> dict:
+        trade = self.db.get_trade(trade_id)
+        if not trade:
+            return {"content": "❌ Intercambio no encontrado.", "components": []}
+        if trade["status"] != "pending":
+            return {"content": "❌ Este intercambio ya no está activo.", "components": []}
+
+        self.db.cancel_trade(trade_id)
+        return {
+            "content": f"❌ <@{user_id}> rechazó el intercambio.",
+            "embeds": [],
+            "components": [],
         }
 
     async def handle_config(self, guild_id: str, accion: str, command: str | None, channel_id: str | None) -> dict:

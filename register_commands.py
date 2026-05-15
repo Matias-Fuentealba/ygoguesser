@@ -79,6 +79,15 @@ COMMANDS = [
         ],
     },
     {
+        "name": "intercambiar",
+        "description": "Propone un intercambio de cartas con otro usuario.",
+        "options": [
+            {"name": "usuario", "description": "Usuario con quien intercambiar", "type": 6, "required": True},
+            {"name": "mi_carta", "description": "Carta que ofreces", "type": 3, "required": True},
+            {"name": "su_carta", "description": "Carta que pides a cambio", "type": 3, "required": True},
+        ],
+    },
+    {
         "name": "config",
         "description": "Configura restricciones de canal para los comandos (solo admins).",
         "options": [

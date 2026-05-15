@@ -232,6 +232,71 @@ class Database:
         self.client.table("collection").update({"protected": new_val}).eq("discord_id", discord_id).eq("card_id", row["card_id"]).execute()
         return {"card_name": row["card_name"], "protected": new_val}
 
+    def get_collection_card(self, discord_id: str, card_name: str) -> dict | None:
+        result = (
+            self.client.table("collection")
+            .select("card_id, card_name, rarity, image_url, count, protected")
+            .eq("discord_id", discord_id)
+            .ilike("card_name", card_name)
+            .execute()
+        )
+        return result.data[0] if result.data else None
+
+    def remove_one_card(self, discord_id: str, card_id: int) -> bool:
+        result = self.client.table("collection").select("count").eq("discord_id", discord_id).eq("card_id", card_id).execute()
+        if not result.data:
+            return False
+        count = result.data[0]["count"]
+        if count <= 1:
+            self.client.table("collection").delete().eq("discord_id", discord_id).eq("card_id", card_id).execute()
+        else:
+            self.client.table("collection").update({"count": count - 1}).eq("discord_id", discord_id).eq("card_id", card_id).execute()
+        return True
+
+    # ---------- trades ----------
+
+    def create_trade(self, from_user_id: str, from_card: dict, to_user_id: str, to_card: dict) -> dict:
+        result = (
+            self.client.table("trades")
+            .insert({
+                "from_user_id": from_user_id,
+                "from_card_id": from_card["card_id"],
+                "from_card_name": from_card["card_name"],
+                "from_card_rarity": from_card["rarity"],
+                "from_card_image_url": from_card["image_url"],
+                "to_user_id": to_user_id,
+                "to_card_id": to_card["card_id"],
+                "to_card_name": to_card["card_name"],
+                "to_card_rarity": to_card["rarity"],
+                "to_card_image_url": to_card["image_url"],
+                "status": "pending",
+            })
+            .execute()
+        )
+        return result.data[0]
+
+    def get_trade(self, trade_id: str) -> dict | None:
+        result = self.client.table("trades").select("*").eq("id", trade_id).execute()
+        return result.data[0] if result.data else None
+
+    def complete_trade(self, trade_id: str) -> bool:
+        trade = self.get_trade(trade_id)
+        if not trade or trade["status"] != "pending":
+            return False
+        from_owned = self.client.table("collection").select("count").eq("discord_id", trade["from_user_id"]).eq("card_id", trade["from_card_id"]).execute()
+        to_owned = self.client.table("collection").select("count").eq("discord_id", trade["to_user_id"]).eq("card_id", trade["to_card_id"]).execute()
+        if not from_owned.data or not to_owned.data:
+            return False
+        self.remove_one_card(trade["from_user_id"], trade["from_card_id"])
+        self.remove_one_card(trade["to_user_id"], trade["to_card_id"])
+        self.add_to_collection(trade["to_user_id"], [{"card_id": trade["from_card_id"], "name": trade["from_card_name"], "rarity": trade["from_card_rarity"], "image_url": trade["from_card_image_url"]}])
+        self.add_to_collection(trade["from_user_id"], [{"card_id": trade["to_card_id"], "name": trade["to_card_name"], "rarity": trade["to_card_rarity"], "image_url": trade["to_card_image_url"]}])
+        self.client.table("trades").update({"status": "completed"}).eq("id", trade_id).execute()
+        return True
+
+    def cancel_trade(self, trade_id: str):
+        self.client.table("trades").update({"status": "rejected"}).eq("id", trade_id).execute()
+
     # ---------- channel locks ----------
 
     def get_command_channel(self, guild_id: str, command: str) -> str | None:
