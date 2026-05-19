@@ -97,8 +97,8 @@ STRINGS = {
         "pack_coins_remaining": "<:coinicon:1506149435179143248> Coins remaining: {coins}",
         "btn_pack_perm": "✨ Original Legends",
         "btn_pack_rot": "🆕 Next Generation",
-        "btn_x10_perm": "x10 Original Legends ({cost}<:coinicon:1506149435179143248>)",
-        "btn_x10_rot": "x10 Next Generation ({cost}<:coinicon:1506149435179143248>)",
+        "btn_x10_perm": "x10 Original Legends ({cost})",
+        "btn_x10_rot": "x10 Next Generation ({cost})",
 
         # collection
         "collection_empty": "You don't have any cards yet. Use `/pack` to open your first pack.",
@@ -355,8 +355,8 @@ STRINGS = {
         "pack_coins_remaining": "<:coinicon:1506149435179143248> Monedas restantes: {coins}",
         "btn_pack_perm": "✨ Original Legends",
         "btn_pack_rot": "🆕 Next Generation",
-        "btn_x10_perm": "x10 Original Legends ({cost}<:coinicon:1506149435179143248>)",
-        "btn_x10_rot": "x10 Next Generation ({cost}<:coinicon:1506149435179143248>)",
+        "btn_x10_perm": "x10 Original Legends ({cost})",
+        "btn_x10_rot": "x10 Next Generation ({cost})",
 
         # collection
         "collection_empty": "No tienes cartas aún. Usa `/sobre` para abrir tu primer sobre.",

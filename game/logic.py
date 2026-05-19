@@ -350,11 +350,12 @@ class GameManager:
         }
 
     def _x10_buttons(self, user_id: str = "", lang: str = "en") -> list:
+        coin_emoji = {"id": "1506149435179143248", "name": "coinicon"}
         return [{
             "type": 1,
             "components": [
-                {"type": 2, "style": 1, "label": t("btn_x10_perm", lang, cost=X10_COST), "custom_id": f"gacha_x10:{user_id}:permanent"},
-                {"type": 2, "style": 2, "label": t("btn_x10_rot", lang, cost=X10_COST), "custom_id": f"gacha_x10:{user_id}:rotating"},
+                {"type": 2, "style": 1, "label": t("btn_x10_perm", lang, cost=X10_COST), "emoji": coin_emoji, "custom_id": f"gacha_x10:{user_id}:permanent"},
+                {"type": 2, "style": 2, "label": t("btn_x10_rot", lang, cost=X10_COST), "emoji": coin_emoji, "custom_id": f"gacha_x10:{user_id}:rotating"},
             ],
         }]
 
