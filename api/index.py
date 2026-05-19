@@ -328,7 +328,7 @@ async def home():
       </div>
 
       <div class="links">
-        <a class="btn" href="https://discord.com/oauth2/authorize?client_id=1357088295358791761&scope=bot+applications.commands&permissions=2048" target="_blank">Add to Discord</a>
+        <a class="btn" href="https://discord.com/oauth2/authorize?client_id=1313541894407716987&scope=bot+applications.commands&permissions=2048" target="_blank">Add to Discord</a>
         <a class="btn secondary" href="/banner">View Card Pool</a>
         <a class="btn secondary" href="/terms">Terms</a>
         <a class="btn secondary" href="/privacy">Privacy</a>
