@@ -444,7 +444,7 @@ class GameManager:
 
         grouped: dict[str, list[str]] = {}
         for c in cards_sorted:
-            star = " ⭐" if str(c["card_id"]) in new_ids else ""
+            star = " <:newicon:1506143726840578139>" if str(c["card_id"]) in new_ids else ""
             grouped.setdefault(c["rarity"], []).append(f"{c['name']}{star}")
 
         fields = []
