@@ -395,7 +395,7 @@ async def privacy():
 
 @app.get("/banner", response_class=HTMLResponse)
 async def banner():
-    from game.gacha import PERMANENT_BANNER, ROTATING_BANNER, RARITY_EMOJIS
+    from game.gacha import PERMANENT_BANNER, ROTATING_BANNER, RARITY_EMOJIS_WEB as RARITY_EMOJIS
 
     rarity_labels = {"secret": "Secret Rare", "ultra": "Ultra Rare", "super": "Super Rare", "rare": "Rare", "common": "Common"}
     rarity_colors = {"secret": "#FFD700", "ultra": "#FFA500", "super": "#C0C0C0", "rare": "#0070DD", "common": "#9D9D9D"}

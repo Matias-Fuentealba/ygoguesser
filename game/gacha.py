@@ -7,7 +7,15 @@ X10_COST = 500
 RARITY_WEIGHTS = {"secret": 1, "ultra": 4, "super": 15, "rare": 30, "common": 50}
 
 RARITY_EMOJIS = {
-    "secret": "✨✨✨",
+    "secret": "<:secreticon:1506142199526461610>",
+    "ultra": "<:ultraicon:1506142184632746075>",
+    "super": "<:supericon:1506141953769865388>",
+    "rare": "<:rareicon:1506141758222897262>",
+    "common": "<:commonicon:1506141315249733662>",
+}
+
+RARITY_EMOJIS_WEB = {
+    "secret": "✨",
     "ultra": "⭐⭐",
     "super": "⭐",
     "rare": "🔹",
