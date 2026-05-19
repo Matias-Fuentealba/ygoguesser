@@ -396,11 +396,18 @@ async def privacy():
 
 @app.get("/banner", response_class=HTMLResponse)
 async def banner():
-    from game.gacha import PERMANENT_BANNER, ROTATING_BANNER, RARITY_EMOJIS_WEB as RARITY_EMOJIS
+    from game.gacha import PERMANENT_BANNER, ROTATING_BANNER
 
     rarity_labels = {"secret": "Secret Rare", "ultra": "Ultra Rare", "super": "Super Rare", "rare": "Rare", "common": "Common"}
     rarity_colors = {"secret": "#FFD700", "ultra": "#FFA500", "super": "#C0C0C0", "rare": "#0070DD", "common": "#9D9D9D"}
     rarity_probs = {"secret": "1%", "ultra": "4%", "super": "15%", "rare": "30%", "common": "50%"}
+    rarity_emoji_imgs = {
+        "secret": "https://cdn.discordapp.com/emojis/1506142199526461610.png",
+        "ultra":  "https://cdn.discordapp.com/emojis/1506142184632746075.png",
+        "super":  "https://cdn.discordapp.com/emojis/1506141953769865388.png",
+        "rare":   "https://cdn.discordapp.com/emojis/1506141758222897262.png",
+        "common": "https://cdn.discordapp.com/emojis/1506141315249733662.png",
+    }
 
     def build_banner_html(b: dict) -> str:
         img_html = (
@@ -411,6 +418,7 @@ async def banner():
         for rarity in ("secret", "ultra", "super", "rare", "common"):
             cards = b.get(rarity, [])
             color = rarity_colors[rarity]
+            emoji_img = f'<img src="{rarity_emoji_imgs[rarity]}" style="width:20px;height:20px;vertical-align:middle;margin-right:6px">'
             cards_html = "".join(
                 f"""<div style="text-align:center;width:120px">
                       <img src="https://images.ygoprodeck.com/images/cards/{c['id']}.jpg"
@@ -421,7 +429,7 @@ async def banner():
             )
             sections += f"""
             <div style="margin-bottom:32px">
-              <h3 style="color:{color};margin-bottom:4px">{RARITY_EMOJIS[rarity]} {rarity_labels[rarity]} <span style="font-size:14px;color:#aaa">— {rarity_probs[rarity]}</span></h3>
+              <h3 style="color:{color};margin-bottom:4px">{emoji_img}{rarity_labels[rarity]} <span style="font-size:14px;color:#aaa">— {rarity_probs[rarity]}</span></h3>
               <p style="color:#888;margin:0 0 12px">{len(cards)} cards in pool</p>
               <div style="display:flex;flex-wrap:wrap;gap:12px">{cards_html}</div>
             </div>"""
