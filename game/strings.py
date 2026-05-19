@@ -13,17 +13,17 @@ STRINGS = {
         "welcome_body": (
             "🎮 **Welcome to YGOGuesser!**\n\n"
             "Test your Yu-Gi-Oh! card knowledge. Choose a mode:\n\n"
-            "🃏 **Hints Mode** — Progressive hints are revealed about a card. The fewer hints you use, the more points you earn.\n"
+            "<:ygobackicon:1506144706218950718> **Hints Mode** — Progressive hints are revealed about a card. The fewer hints you use, the more points you earn.\n"
             "🔍 **Zoom Mode** — A heavily zoomed-in image of the card is shown. If you're wrong, the zoom slowly pulls back.\n"
             "💰 **Price Mode** — Two cards are shown. Guess which one is more expensive on the TCG market. One wrong answer ends your streak!\n"
         ),
-        "btn_hints": "🃏 Hints Mode",
+        "btn_hints": "<:ygobackicon:1506144706218950718> Hints Mode",
         "btn_zoom": "🔍 Zoom Mode",
         "btn_price": "💰 Price Mode",
 
         # hints game
         "hints_started": (
-            "🃏 **Hints Mode started!**\n\n"
+            "<:ygobackicon:1506144706218950718> **Hints Mode started!**\n\n"
             "Here's the first hint:\n{hint}\n\n"
             "You have up to **{max_hints} hints** available.\n"
             "➡️ Use `/hint` for more hints or `/guess card:<name>` to attempt."
@@ -86,10 +86,10 @@ STRINGS = {
             "💰 You have **{coins} coins** available."
         ),
         "pack_cooldown_hint": "\n> 💡 Earn coins by playing games with `/play`.",
-        "pack_available": "🎴 **Pack available!** Which banner do you want to pull from?\n💰 You have **{coins} coins** available.",
+        "pack_available": "<:ygobackicon:1506144706218950718> **Pack available!** Which banner do you want to pull from?\n💰 You have **{coins} coins** available.",
         "pack_already_used": "⏳ Pack already used. Next one available in **{mins}m {secs}s**.",
-        "pack_opened": "🎴 Pack opened! — {banner}",
-        "pack_x10_opened": "🎴 Opened 10 packs! — {banner}",
+        "pack_opened": "<:ygobackicon:1506144706218950718> Pack opened! — {banner}",
+        "pack_x10_opened": "<:ygobackicon:1506144706218950718> Opened 10 packs! — {banner}",
         "pack_x10_no_user": "Use `/pack` first to register.",
         "pack_x10_no_coins": "❌ You need **{cost} coins** but you only have **{coins}**.",
         "pack_x10_insufficient": "❌ Not enough coins.",
@@ -200,7 +200,7 @@ STRINGS = {
             "`/surrender` — Abandon the current game\n"
             "`/ranking` — Top 10 players"
         ),
-        "help_gacha_title": "🎴 Gacha",
+        "help_gacha_title": "<:ygobackicon:1506144706218950718> Gacha",
         "help_gacha_value": (
             "`/pack` — Open a free pack (once per hour)\n"
             "`/collection` — View your collected cards\n"
@@ -215,8 +215,8 @@ STRINGS = {
         "help_footer": "YGOGuesser • ygoguesser.vercel.app",
 
         # hints content
-        "hint1_extra": "🃏 It's a **{type}** monster, attribute **{attr}**, type **{race}**",
-        "hint1_normal": "🃏 It's a monster with attribute **{attr}**, type **{race}**, level **{level_range}**",
+        "hint1_extra": "<:ygobackicon:1506144706218950718> It's a **{type}** monster, attribute **{attr}**, type **{race}**",
+        "hint1_normal": "<:ygobackicon:1506144706218950718> It's a monster with attribute **{attr}**, type **{race}**, level **{level_range}**",
         "level_range_low": "low (1–4)",
         "level_range_mid": "medium (5–6)",
         "level_range_high": "high (7+)",
@@ -263,17 +263,17 @@ STRINGS = {
         "welcome_body": (
             "🎮 **¡Bienvenido a YGOGuesser!**\n\n"
             "Pon a prueba tu conocimiento de cartas Yu-Gi-Oh! Elige un modo:\n\n"
-            "🃏 **Modo Pistas** — Se revelan pistas progresivas sobre una carta. Cuantas menos pistas uses, más puntos ganas.\n"
+            "<:ygobackicon:1506144706218950718> **Modo Pistas** — Se revelan pistas progresivas sobre una carta. Cuantas menos pistas uses, más puntos ganas.\n"
             "🔍 **Modo Zoom** — Se muestra una imagen muy zoomeada de la carta. Si fallas, el zoom se aleja poco a poco.\n"
             "💰 **Modo Precio** — Se muestran dos cartas. Adivina cuál es más cara en el mercado TCG. ¡Un fallo y termina la racha!\n"
         ),
-        "btn_hints": "🃏 Modo Pistas",
+        "btn_hints": "<:ygobackicon:1506144706218950718> Modo Pistas",
         "btn_zoom": "🔍 Modo Zoom",
         "btn_price": "💰 Modo Precio",
 
         # hints game
         "hints_started": (
-            "🃏 **¡Modo Pistas iniciado!**\n\n"
+            "<:ygobackicon:1506144706218950718> **¡Modo Pistas iniciado!**\n\n"
             "Aquí va la primera pista:\n{hint}\n\n"
             "Tienes hasta **{max_hints} pistas** disponibles.\n"
             "➡️ Usa `/pista` para más pistas o `/adivinar carta:<nombre>` para intentar."
@@ -336,10 +336,10 @@ STRINGS = {
             "💰 Tienes **{coins} monedas** disponibles."
         ),
         "pack_cooldown_hint": "\n> 💡 Gana monedas jugando partidas con `/jugar`.",
-        "pack_available": "🎴 **¡Sobre disponible!** ¿De qué banner quieres tirar?\n💰 Tienes **{coins} monedas** disponibles.",
+        "pack_available": "<:ygobackicon:1506144706218950718> **¡Sobre disponible!** ¿De qué banner quieres tirar?\n💰 Tienes **{coins} monedas** disponibles.",
         "pack_already_used": "⏳ El sobre ya fue usado. Próximo disponible en **{mins}m {secs}s**.",
-        "pack_opened": "🎴 ¡Abriste un sobre! — {banner}",
-        "pack_x10_opened": "🎴 ¡Abriste 10 sobres! — {banner}",
+        "pack_opened": "<:ygobackicon:1506144706218950718> ¡Abriste un sobre! — {banner}",
+        "pack_x10_opened": "<:ygobackicon:1506144706218950718> ¡Abriste 10 sobres! — {banner}",
         "pack_x10_no_user": "Primero usa `/sobre` para registrarte.",
         "pack_x10_no_coins": "❌ Necesitas **{cost} monedas** pero tienes **{coins}**.",
         "pack_x10_insufficient": "❌ No tienes suficientes monedas.",
@@ -450,7 +450,7 @@ STRINGS = {
             "`/rendirse` — Abandona la partida actual\n"
             "`/ranking` — Top 10 de jugadores"
         ),
-        "help_gacha_title": "🎴 Gacha",
+        "help_gacha_title": "<:ygobackicon:1506144706218950718> Gacha",
         "help_gacha_value": (
             "`/sobre` — Abre un sobre gratis (1 vez por hora)\n"
             "`/coleccion` — Ve tus cartas conseguidas\n"
@@ -465,8 +465,8 @@ STRINGS = {
         "help_footer": "YGOGuesser • ygoguesser.vercel.app",
 
         # hints content
-        "hint1_extra": "🃏 Es un monstruo **{type}**, atributo **{attr}**, tipo **{race}**",
-        "hint1_normal": "🃏 Es un monstruo de atributo **{attr}**, tipo **{race}**, nivel **{level_range}**",
+        "hint1_extra": "<:ygobackicon:1506144706218950718> Es un monstruo **{type}**, atributo **{attr}**, tipo **{race}**",
+        "hint1_normal": "<:ygobackicon:1506144706218950718> Es un monstruo de atributo **{attr}**, tipo **{race}**, nivel **{level_range}**",
         "level_range_low": "bajo (1–4)",
         "level_range_mid": "medio (5–6)",
         "level_range_high": "alto (7+)",

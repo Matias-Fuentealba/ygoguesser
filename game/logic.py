@@ -582,7 +582,7 @@ class GameManager:
         embeds = []
         for label_key, banner in [("gacha_banner_rotating", ROTATING_BANNER), ("gacha_banner_permanent", PERMANENT_BANNER)]:
             embed = {
-                "title": f"🎴 {t(label_key, lang)}: {banner['name']}",
+                "title": f"<:ygobackicon:1506144706218950718> {t(label_key, lang)}: {banner['name']}",
                 "description": t("gacha_probs", lang,
                     secret=RARITY_EMOJIS["secret"], ultra=RARITY_EMOJIS["ultra"],
                     super=RARITY_EMOJIS["super"], rare=RARITY_EMOJIS["rare"],
