@@ -418,7 +418,7 @@ async def banner():
         for rarity in ("secret", "ultra", "super", "rare", "common"):
             cards = b.get(rarity, [])
             color = rarity_colors[rarity]
-            emoji_img = f'<img src="{rarity_emoji_imgs[rarity]}" style="width:20px;height:20px;vertical-align:middle;margin-right:6px">'
+            emoji_img = f'<img src="{rarity_emoji_imgs[rarity]}" style="width:32px;height:32px;vertical-align:middle;margin-right:8px">'
             cards_html = "".join(
                 f"""<div style="text-align:center;width:120px">
                       <img src="https://images.ygoprodeck.com/images/cards/{c['id']}.jpg"
@@ -442,10 +442,10 @@ async def banner():
     <html>
     <head><title>YGOGuesser — Banners</title><meta charset="utf-8"></head>
     <body style="font-family:sans-serif;background:#1a1a2e;color:#eee;max-width:1000px;margin:40px auto;padding:0 20px">
-      <h1 style="color:#FFD700">🎴 {PERMANENT_BANNER['name']} <span style="font-size:16px;color:#aaa">— Permanent banner</span></h1>
+      <h1 style="color:#FFD700"><img src="https://cdn.discordapp.com/emojis/1506144706218950718.png" style="width:40px;height:40px;vertical-align:middle;margin-right:10px">{PERMANENT_BANNER['name']} <span style="font-size:16px;color:#aaa">— Permanent banner</span></h1>
       {perm_html}
       <hr style="border-color:#333;margin:48px 0">
-      <h1 style="color:#FFD700">🎴 {ROTATING_BANNER['name']} <span style="font-size:16px;color:#aaa">— Current rotating banner</span></h1>
+      <h1 style="color:#FFD700"><img src="https://cdn.discordapp.com/emojis/1506144706218950718.png" style="width:40px;height:40px;vertical-align:middle;margin-right:10px">{ROTATING_BANNER['name']} <span style="font-size:16px;color:#aaa">— Current rotating banner</span></h1>
       {rot_html}
     </body>
     </html>
