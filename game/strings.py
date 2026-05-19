@@ -15,11 +15,11 @@ STRINGS = {
             "Test your Yu-Gi-Oh! card knowledge. Choose a mode:\n\n"
             "<:ygobackicon:1506144706218950718> **Hints Mode** — Progressive hints are revealed about a card. The fewer hints you use, the more points you earn.\n"
             "🔍 **Zoom Mode** — A heavily zoomed-in image of the card is shown. If you're wrong, the zoom slowly pulls back.\n"
-            "💰 **Price Mode** — Two cards are shown. Guess which one is more expensive on the TCG market. One wrong answer ends your streak!\n"
+            "<:coinicon:1506149435179143248> **Price Mode** — Two cards are shown. Guess which one is more expensive on the TCG market. One wrong answer ends your streak!\n"
         ),
         "btn_hints": "<:ygobackicon:1506144706218950718> Hints Mode",
         "btn_zoom": "🔍 Zoom Mode",
-        "btn_price": "💰 Price Mode",
+        "btn_price": "<:coinicon:1506149435179143248> Price Mode",
 
         # hints game
         "hints_started": (
@@ -42,7 +42,7 @@ STRINGS = {
         ),
 
         # surrender
-        "surrender_price": "🏳️ You surrendered the price game. Final score: **{score} points** · **{coins} coins** 💰.",
+        "surrender_price": "🏳️ You surrendered the price game. Final score: **{score} points** · **{coins} coins** <:coinicon:1506149435179143248>.",
         "surrender_hints": "🏳️ You surrendered. The card was **{name}**.",
 
         # zoom
@@ -68,13 +68,13 @@ STRINGS = {
 
         # price
         "price_no_cards": "Could not fetch cards with prices. Please try again.",
-        "price_question": "💰 **Which card is more expensive?** | Score: **{score}**",
-        "price_correct_prefix": "✅ Correct! **{card}** was worth **${price:.2f}** vs **${other:.2f}** (+5 💰)\n\n",
-        "price_win": "✅ Correct! No more cards available. Final score: **{score} points** · **{coins} coins** 💰.",
+        "price_question": "<:coinicon:1506149435179143248> **Which card is more expensive?** | Score: **{score}**",
+        "price_correct_prefix": "✅ Correct! **{card}** was worth **${price:.2f}** vs **${other:.2f}** (+5 <:coinicon:1506149435179143248>)\n\n",
+        "price_win": "✅ Correct! No more cards available. Final score: **{score} points** · **{coins} coins** <:coinicon:1506149435179143248>.",
         "price_wrong": (
             "❌ **Wrong.** The most expensive was **{card}** "
             "at **${price:.2f}** (vs **${other:.2f}**).\n"
-            "🏆 Final score: **{score} points** · **{coins} coins** 💰."
+            "🏆 Final score: **{score} points** · **{coins} coins** <:coinicon:1506149435179143248>."
         ),
         "price_no_game": "You don't have an active price game. Use `/play` to start.",
         "btn_card1": "Card 1",
@@ -83,10 +83,10 @@ STRINGS = {
         # gacha / packs
         "pack_cooldown": (
             "⏳ Your next free pack will be available in **{mins}m {secs}s**.\n"
-            "💰 You have **{coins} coins** available."
+            "<:coinicon:1506149435179143248> You have **{coins} coins** available."
         ),
         "pack_cooldown_hint": "\n> 💡 Earn coins by playing games with `/play`.",
-        "pack_available": "<:ygobackicon:1506144706218950718> **Pack available!** Which banner do you want to pull from?\n💰 You have **{coins} coins** available.",
+        "pack_available": "<:ygobackicon:1506144706218950718> **Pack available!** Which banner do you want to pull from?\n<:coinicon:1506149435179143248> You have **{coins} coins** available.",
         "pack_already_used": "⏳ Pack already used. Next one available in **{mins}m {secs}s**.",
         "pack_opened": "<:ygobackicon:1506144706218950718> Pack opened! — {banner}",
         "pack_x10_opened": "<:ygobackicon:1506144706218950718> Opened 10 packs! — {banner}",
@@ -94,11 +94,11 @@ STRINGS = {
         "pack_x10_no_coins": "❌ You need **{cost} coins** but you only have **{coins}**.",
         "pack_x10_insufficient": "❌ Not enough coins.",
         "pack_new_card_footer": "<:newicon:1506143726840578139> = new card in your collection",
-        "pack_coins_remaining": "💰 Coins remaining: {coins}",
+        "pack_coins_remaining": "<:coinicon:1506149435179143248> Coins remaining: {coins}",
         "btn_pack_perm": "✨ Original Legends",
         "btn_pack_rot": "🆕 Next Generation",
-        "btn_x10_perm": "x10 Original Legends ({cost}💰)",
-        "btn_x10_rot": "x10 Next Generation ({cost}💰)",
+        "btn_x10_perm": "x10 Original Legends ({cost}<:coinicon:1506149435179143248>)",
+        "btn_x10_rot": "x10 Next Generation ({cost}<:coinicon:1506149435179143248>)",
 
         # collection
         "collection_empty": "You don't have any cards yet. Use `/pack` to open your first pack.",
@@ -113,7 +113,7 @@ STRINGS = {
         "sell_cancel_btn": "Cancel",
         "sell_nothing": "No duplicates to sell.",
         "sell_done_title": "✅ Duplicates sold",
-        "sell_done_desc": "You earned **{coins} coins** 💰\nCurrent balance: **{balance} coins**",
+        "sell_done_desc": "You earned **{coins} coins** <:coinicon:1506149435179143248>\nCurrent balance: **{balance} coins**",
         "sell_cancelled": "Sale cancelled.",
 
         # protect
@@ -135,7 +135,7 @@ STRINGS = {
             "**How it works?**\n"
             "You earn **coins** by playing — they're stored separately from the ranking, spending them doesn't lower your position.\n\n"
             "🆓 **`/pack`** — 5 free cards every hour (choose banner)\n"
-            "💰 **x10** — 10 cards for **{cost} coins**, guarantees at least 1 Ultra Rare\n\n"
+            "<:coinicon:1506149435179143248> **x10** — 10 cards for **{cost} coins**, guarantees at least 1 Ultra Rare\n\n"
             "🔗 [See all cards in the pool](https://ygoguesser.vercel.app/banner)\n\n"
         ),
         "gacha_probs": (
@@ -207,10 +207,18 @@ STRINGS = {
             "`/sell` — Sell your duplicate cards for coins\n"
             "`/gacha` — Info on the current banner and odds"
         ),
-        "help_coins_title": "💰 Coins",
+        "help_coins_title": "<:coinicon:1506149435179143248> Coins",
         "help_coins_value": (
             "You earn coins by playing games — they're stored separately from the ranking. "
             "Spending them **does not lower your position**."
+        ),
+        "help_config_title": "⚙️ Admin",
+        "help_config_value": (
+            "`/config action:lock command:<cmd> channel:<#ch>` — Restrict a command to a specific channel\n"
+            "`/config action:unlock command:<cmd>` — Remove channel restriction\n"
+            "`/config action:view` — See all active restrictions\n"
+            "`/config language:English/Español` — Set the bot language for this server\n"
+            "*Requires Administrator permission.*"
         ),
         "help_footer": "YGOGuesser • ygoguesser.vercel.app",
 
@@ -265,11 +273,11 @@ STRINGS = {
             "Pon a prueba tu conocimiento de cartas Yu-Gi-Oh! Elige un modo:\n\n"
             "<:ygobackicon:1506144706218950718> **Modo Pistas** — Se revelan pistas progresivas sobre una carta. Cuantas menos pistas uses, más puntos ganas.\n"
             "🔍 **Modo Zoom** — Se muestra una imagen muy zoomeada de la carta. Si fallas, el zoom se aleja poco a poco.\n"
-            "💰 **Modo Precio** — Se muestran dos cartas. Adivina cuál es más cara en el mercado TCG. ¡Un fallo y termina la racha!\n"
+            "<:coinicon:1506149435179143248> **Modo Precio** — Se muestran dos cartas. Adivina cuál es más cara en el mercado TCG. ¡Un fallo y termina la racha!\n"
         ),
         "btn_hints": "<:ygobackicon:1506144706218950718> Modo Pistas",
         "btn_zoom": "🔍 Modo Zoom",
-        "btn_price": "💰 Modo Precio",
+        "btn_price": "<:coinicon:1506149435179143248> Modo Precio",
 
         # hints game
         "hints_started": (
@@ -292,7 +300,7 @@ STRINGS = {
         ),
 
         # surrender
-        "surrender_price": "🏳️ Abandonaste el modo precio. Puntaje final: **{score} puntos** · **{coins} monedas** 💰.",
+        "surrender_price": "🏳️ Abandonaste el modo precio. Puntaje final: **{score} puntos** · **{coins} monedas** <:coinicon:1506149435179143248>.",
         "surrender_hints": "🏳️ Te rendiste. La carta era **{name}**.",
 
         # zoom
@@ -318,13 +326,13 @@ STRINGS = {
 
         # price
         "price_no_cards": "No se pudieron obtener cartas con precio. Intenta de nuevo.",
-        "price_question": "💰 **¿Cuál carta es más cara?** | Puntaje: **{score}**",
-        "price_correct_prefix": "✅ ¡Correcto! **{card}** valía **${price:.2f}** vs **${other:.2f}** (+5 💰)\n\n",
-        "price_win": "✅ ¡Correcto! No hay más cartas disponibles. Puntaje final: **{score} puntos** · **{coins} monedas** 💰.",
+        "price_question": "<:coinicon:1506149435179143248> **¿Cuál carta es más cara?** | Puntaje: **{score}**",
+        "price_correct_prefix": "✅ ¡Correcto! **{card}** valía **${price:.2f}** vs **${other:.2f}** (+5 <:coinicon:1506149435179143248>)\n\n",
+        "price_win": "✅ ¡Correcto! No hay más cartas disponibles. Puntaje final: **{score} puntos** · **{coins} monedas** <:coinicon:1506149435179143248>.",
         "price_wrong": (
             "❌ **Incorrecto.** La más cara era **{card}** "
             "con **${price:.2f}** (vs **${other:.2f}**).\n"
-            "🏆 Puntaje final: **{score} puntos** · **{coins} monedas** 💰."
+            "🏆 Puntaje final: **{score} puntos** · **{coins} monedas** <:coinicon:1506149435179143248>."
         ),
         "price_no_game": "No tienes una partida de precio activa. Usa `/jugar` para empezar.",
         "btn_card1": "Carta 1",
@@ -333,10 +341,10 @@ STRINGS = {
         # gacha / packs
         "pack_cooldown": (
             "⏳ Tu próximo sobre gratis estará disponible en **{mins}m {secs}s**.\n"
-            "💰 Tienes **{coins} monedas** disponibles."
+            "<:coinicon:1506149435179143248> Tienes **{coins} monedas** disponibles."
         ),
         "pack_cooldown_hint": "\n> 💡 Gana monedas jugando partidas con `/jugar`.",
-        "pack_available": "<:ygobackicon:1506144706218950718> **¡Sobre disponible!** ¿De qué banner quieres tirar?\n💰 Tienes **{coins} monedas** disponibles.",
+        "pack_available": "<:ygobackicon:1506144706218950718> **¡Sobre disponible!** ¿De qué banner quieres tirar?\n<:coinicon:1506149435179143248> Tienes **{coins} monedas** disponibles.",
         "pack_already_used": "⏳ El sobre ya fue usado. Próximo disponible en **{mins}m {secs}s**.",
         "pack_opened": "<:ygobackicon:1506144706218950718> ¡Abriste un sobre! — {banner}",
         "pack_x10_opened": "<:ygobackicon:1506144706218950718> ¡Abriste 10 sobres! — {banner}",
@@ -344,11 +352,11 @@ STRINGS = {
         "pack_x10_no_coins": "❌ Necesitas **{cost} monedas** pero tienes **{coins}**.",
         "pack_x10_insufficient": "❌ No tienes suficientes monedas.",
         "pack_new_card_footer": "<:newicon:1506143726840578139> = carta nueva en tu colección",
-        "pack_coins_remaining": "💰 Monedas restantes: {coins}",
+        "pack_coins_remaining": "<:coinicon:1506149435179143248> Monedas restantes: {coins}",
         "btn_pack_perm": "✨ Original Legends",
         "btn_pack_rot": "🆕 Next Generation",
-        "btn_x10_perm": "x10 Original Legends ({cost}💰)",
-        "btn_x10_rot": "x10 Next Generation ({cost}💰)",
+        "btn_x10_perm": "x10 Original Legends ({cost}<:coinicon:1506149435179143248>)",
+        "btn_x10_rot": "x10 Next Generation ({cost}<:coinicon:1506149435179143248>)",
 
         # collection
         "collection_empty": "No tienes cartas aún. Usa `/sobre` para abrir tu primer sobre.",
@@ -363,7 +371,7 @@ STRINGS = {
         "sell_cancel_btn": "Cancelar",
         "sell_nothing": "No había duplicadas para vender.",
         "sell_done_title": "✅ Vendiste tus duplicadas",
-        "sell_done_desc": "Ganaste **{coins} monedas** 💰\nSaldo actual: **{balance} monedas**",
+        "sell_done_desc": "Ganaste **{coins} monedas** <:coinicon:1506149435179143248>\nSaldo actual: **{balance} monedas**",
         "sell_cancelled": "Venta cancelada.",
 
         # protect
@@ -385,7 +393,7 @@ STRINGS = {
             "**¿Cómo funciona?**\n"
             "Ganas **monedas** jugando — se guardan por separado del ranking, gastarlas no baja tu posición.\n\n"
             "🆓 **`/sobre`** — 5 cartas gratis cada hora (elige banner)\n"
-            "💰 **x10** — 10 cartas por **{cost} monedas**, garantiza al menos 1 Ultra Rare\n\n"
+            "<:coinicon:1506149435179143248> **x10** — 10 cartas por **{cost} monedas**, garantiza al menos 1 Ultra Rare\n\n"
             "🔗 [Ver todas las cartas del pool](https://ygoguesser.vercel.app/banner)\n\n"
         ),
         "gacha_probs": (
@@ -457,10 +465,18 @@ STRINGS = {
             "`/vender` — Vende tus cartas duplicadas por monedas\n"
             "`/gacha` — Info del banner actual y probabilidades"
         ),
-        "help_coins_title": "💰 Monedas",
+        "help_coins_title": "<:coinicon:1506149435179143248> Monedas",
         "help_coins_value": (
             "Ganas monedas jugando partidas — son los mismos puntos del ranking "
             "pero se guardan por separado. Gastarlas **no baja tu posición**."
+        ),
+        "help_config_title": "⚙️ Admin",
+        "help_config_value": (
+            "`/config accion:lockear comando:<cmd> canal:<#ch>` — Restringe un comando a un canal específico\n"
+            "`/config accion:desbloquear comando:<cmd>` — Elimina la restricción de canal\n"
+            "`/config accion:ver` — Ve todas las restricciones activas\n"
+            "`/config idioma:English/Español` — Configura el idioma del bot para este servidor\n"
+            "*Requiere permiso de Administrador.*"
         ),
         "help_footer": "YGOGuesser • ygoguesser.vercel.app",
 

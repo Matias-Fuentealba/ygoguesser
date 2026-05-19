@@ -496,7 +496,7 @@ class GameManager:
         for c in duplicates_sorted:
             extras = c["count"] - 1
             coins = extras * RARITY_SELL_VALUES[c["rarity"]]
-            grouped[c["rarity"]].append(f"{c['card_name']} ×{extras} → {coins} 💰")
+            grouped[c["rarity"]].append(f"{c['card_name']} ×{extras} → {coins} <:coinicon:1506149435179143248>")
 
         fields = []
         for r in rarity_order:
@@ -512,7 +512,7 @@ class GameManager:
                     kept.append(line)
                 value = "\n".join(kept) + f"\n*...and {total_r - len(kept)} more*" if lang == "en" else "\n".join(kept) + f"\n*...y {total_r - len(kept)} más*"
             fields.append({
-                "name": f"{RARITY_EMOJIS[r]} {rarity_names[r]} ({RARITY_SELL_VALUES[r]} 💰/copy)" if lang == "en" else f"{RARITY_EMOJIS[r]} {rarity_names[r]} ({RARITY_SELL_VALUES[r]} 💰/copia)",
+                "name": f"{RARITY_EMOJIS[r]} {rarity_names[r]} ({RARITY_SELL_VALUES[r]} <:coinicon:1506149435179143248>/copy)" if lang == "en" else f"{RARITY_EMOJIS[r]} {rarity_names[r]} ({RARITY_SELL_VALUES[r]} <:coinicon:1506149435179143248>/copia)",
                 "value": value,
                 "inline": False,
             })
@@ -556,6 +556,7 @@ class GameManager:
                     {"name": t("help_game_title", lang), "value": t("help_game_value", lang), "inline": False},
                     {"name": t("help_gacha_title", lang), "value": t("help_gacha_value", lang), "inline": False},
                     {"name": t("help_coins_title", lang), "value": t("help_coins_value", lang), "inline": False},
+                    {"name": t("help_config_title", lang), "value": t("help_config_value", lang), "inline": False},
                 ],
                 "footer": {"text": t("help_footer", lang)},
             }]

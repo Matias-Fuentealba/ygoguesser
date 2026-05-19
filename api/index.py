@@ -276,6 +276,7 @@ async def home():
           width: 200px;
         }
         .card .icon { font-size: 2rem; margin-bottom: 8px; }
+        .card .icon img { width: 48px; height: 48px; object-fit: contain; }
         .card h3 { font-size: 1rem; color: #FFD700; margin-bottom: 6px; }
         .card p { font-size: 0.85rem; color: #999; }
         .links { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
@@ -305,7 +306,7 @@ async def home():
 
       <div class="cards">
         <div class="card">
-          <div class="icon">🃏</div>
+          <div class="icon"><img src="https://cdn.discordapp.com/emojis/1506144706218950718.png" alt="Hints"></div>
           <h3>Hints Mode</h3>
           <p>Guess the card from progressive clues. Fewer hints = more points.</p>
         </div>
@@ -315,12 +316,12 @@ async def home():
           <p>Identify the card from an extreme close-up image.</p>
         </div>
         <div class="card">
-          <div class="icon">💰</div>
+          <div class="icon"><img src="https://cdn.discordapp.com/emojis/1506149435179143248.png" alt="Price"></div>
           <h3>Price Mode</h3>
           <p>Pick the more expensive card. One wrong answer ends your streak.</p>
         </div>
         <div class="card">
-          <div class="icon">🎴</div>
+          <div class="icon"><img src="https://cdn.discordapp.com/emojis/1506144706218950718.png" alt="Gacha"></div>
           <h3>Gacha</h3>
           <p>Open packs, collect cards, sell duplicates and trade with others.</p>
         </div>
@@ -351,7 +352,7 @@ async def terms():
     <html><head><title>YGOGuesser — Terms of Service</title></head>
     <body style="font-family:sans-serif;max-width:700px;margin:40px auto;padding:0 20px">
     <h1>Terms of Service</h1>
-    <p><strong>Last updated:</strong> 2025</p>
+    <p><strong>Last updated:</strong> 2026</p>
     <p>By using the YGOGuesser Discord bot you agree to these terms.</p>
     <h2>1. Use of the Bot</h2>
     <p>YGOGuesser is a free entertainment bot. You agree to use it only for its intended purpose and not to abuse, exploit or attempt to disrupt its functionality.</p>
@@ -373,7 +374,7 @@ async def privacy():
     <html><head><title>YGOGuesser — Privacy Policy</title></head>
     <body style="font-family:sans-serif;max-width:700px;margin:40px auto;padding:0 20px">
     <h1>Privacy Policy</h1>
-    <p><strong>Last updated:</strong> 2025</p>
+    <p><strong>Last updated:</strong> 2026</p>
     <h2>1. Data We Collect</h2>
     <p>When you use YGOGuesser we collect and store:</p>
     <ul>
@@ -421,7 +422,7 @@ async def banner():
             sections += f"""
             <div style="margin-bottom:32px">
               <h3 style="color:{color};margin-bottom:4px">{RARITY_EMOJIS[rarity]} {rarity_labels[rarity]} <span style="font-size:14px;color:#aaa">— {rarity_probs[rarity]}</span></h3>
-              <p style="color:#888;margin:0 0 12px">{len(cards)} cartas en el pool</p>
+              <p style="color:#888;margin:0 0 12px">{len(cards)} cards in pool</p>
               <div style="display:flex;flex-wrap:wrap;gap:12px">{cards_html}</div>
             </div>"""
         return f"{img_html}{sections}"
@@ -433,10 +434,10 @@ async def banner():
     <html>
     <head><title>YGOGuesser — Banners</title><meta charset="utf-8"></head>
     <body style="font-family:sans-serif;background:#1a1a2e;color:#eee;max-width:1000px;margin:40px auto;padding:0 20px">
-      <h1 style="color:#FFD700">🎴 {PERMANENT_BANNER['name']} <span style="font-size:16px;color:#aaa">— Banner permanente</span></h1>
+      <h1 style="color:#FFD700">🎴 {PERMANENT_BANNER['name']} <span style="font-size:16px;color:#aaa">— Permanent banner</span></h1>
       {perm_html}
       <hr style="border-color:#333;margin:48px 0">
-      <h1 style="color:#FFD700">🎴 {ROTATING_BANNER['name']} <span style="font-size:16px;color:#aaa">— Banner rotativo actual</span></h1>
+      <h1 style="color:#FFD700">🎴 {ROTATING_BANNER['name']} <span style="font-size:16px;color:#aaa">— Current rotating banner</span></h1>
       {rot_html}
     </body>
     </html>
