@@ -18,7 +18,7 @@ STRINGS = {
             "<:coinicon:1506149435179143248> **Price Mode** — Two cards are shown. Guess which one is more expensive on the TCG market. One wrong answer ends your streak!\n"
         ),
         "btn_hints": "Hints Mode",
-        "btn_zoom": "🔍 Zoom Mode",
+        "btn_zoom": "Zoom Mode",
         "btn_price": "Price Mode",
 
         # hints game
@@ -276,7 +276,7 @@ STRINGS = {
             "<:coinicon:1506149435179143248> **Modo Precio** — Se muestran dos cartas. Adivina cuál es más cara en el mercado TCG. ¡Un fallo y termina la racha!\n"
         ),
         "btn_hints": "Modo Pistas",
-        "btn_zoom": "🔍 Modo Zoom",
+        "btn_zoom": "Modo Zoom",
         "btn_price": "Modo Precio",
 
         # hints game
