@@ -82,9 +82,9 @@ class GameManager:
             "components": [{
                 "type": 1,
                 "components": [
-                    {"type": 2, "style": 1, "label": t("btn_hints", lang), "custom_id": "mode_hints"},
-                    {"type": 2, "style": 2, "label": t("btn_zoom", lang), "custom_id": "mode_zoom"},
-                    {"type": 2, "style": 4, "label": t("btn_price", lang), "custom_id": "mode_price"},
+                    {"type": 2, "style": 1, "label": t("btn_hints", lang), "emoji": {"id": "1506144706218950718", "name": "ygobackicon"}, "custom_id": "mode_hints"},
+                    {"type": 2, "style": 2, "label": t("btn_zoom", lang), "emoji": {"name": "🔍"}, "custom_id": "mode_zoom"},
+                    {"type": 2, "style": 4, "label": t("btn_price", lang), "emoji": {"id": "1506149435179143248", "name": "coinicon"}, "custom_id": "mode_price"},
                 ],
             }],
         }

@@ -17,9 +17,9 @@ STRINGS = {
             "🔍 **Zoom Mode** — A heavily zoomed-in image of the card is shown. If you're wrong, the zoom slowly pulls back.\n"
             "<:coinicon:1506149435179143248> **Price Mode** — Two cards are shown. Guess which one is more expensive on the TCG market. One wrong answer ends your streak!\n"
         ),
-        "btn_hints": "<:ygobackicon:1506144706218950718> Hints Mode",
+        "btn_hints": "Hints Mode",
         "btn_zoom": "🔍 Zoom Mode",
-        "btn_price": "<:coinicon:1506149435179143248> Price Mode",
+        "btn_price": "Price Mode",
 
         # hints game
         "hints_started": (
@@ -275,9 +275,9 @@ STRINGS = {
             "🔍 **Modo Zoom** — Se muestra una imagen muy zoomeada de la carta. Si fallas, el zoom se aleja poco a poco.\n"
             "<:coinicon:1506149435179143248> **Modo Precio** — Se muestran dos cartas. Adivina cuál es más cara en el mercado TCG. ¡Un fallo y termina la racha!\n"
         ),
-        "btn_hints": "<:ygobackicon:1506144706218950718> Modo Pistas",
+        "btn_hints": "Modo Pistas",
         "btn_zoom": "🔍 Modo Zoom",
-        "btn_price": "<:coinicon:1506149435179143248> Modo Precio",
+        "btn_price": "Modo Precio",
 
         # hints game
         "hints_started": (
