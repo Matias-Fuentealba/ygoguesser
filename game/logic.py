@@ -6,12 +6,12 @@ from game.yugioh import fetch_random_card, build_hints, fetch_card_for_price
 from game.zoom import get_zoomed_image, zoom_score, MAX_ZOOM_LEVEL
 from game.gacha import (
     pull_free, pull_x10,
-    PERMANENT_BANNER, ROTATING_BANNER, X10_COST,
+    DUEL_MONSTERS_BANNER, GX_BANNER, FIVE_DS_BANNER, X10_COST,
     RARITY_EMOJIS, RARITY_COLORS, COOLDOWN_HOURS,
 )
 from game.strings import t
 
-ALL_BANNERS = {"permanent": PERMANENT_BANNER, "rotating": ROTATING_BANNER}
+ALL_BANNERS = {"ol": DUEL_MONSTERS_BANNER, "gx": GX_BANNER, "5ds": FIVE_DS_BANNER}
 
 RARITY_SELL_VALUES = {"secret": 50, "ultra": 20, "super": 10, "rare": 5, "common": 1}
 
@@ -354,8 +354,9 @@ class GameManager:
         return [{
             "type": 1,
             "components": [
-                {"type": 2, "style": 1, "label": t("btn_x10_perm", lang, cost=X10_COST), "emoji": coin_emoji, "custom_id": f"gacha_x10:{user_id}:permanent"},
-                {"type": 2, "style": 2, "label": t("btn_x10_rot", lang, cost=X10_COST), "emoji": coin_emoji, "custom_id": f"gacha_x10:{user_id}:rotating"},
+                {"type": 2, "style": 1, "label": t("btn_x10_ol", lang, cost=X10_COST), "emoji": coin_emoji, "custom_id": f"gacha_x10:{user_id}:ol"},
+                {"type": 2, "style": 2, "label": t("btn_x10_gx", lang, cost=X10_COST), "emoji": coin_emoji, "custom_id": f"gacha_x10:{user_id}:gx"},
+                {"type": 2, "style": 2, "label": t("btn_x10_5ds", lang, cost=X10_COST), "emoji": coin_emoji, "custom_id": f"gacha_x10:{user_id}:5ds"},
             ],
         }]
 
@@ -390,13 +391,17 @@ class GameManager:
 
         return {
             "content": t("pack_available", lang, coins=coins),
-            "components": [{
-                "type": 1,
-                "components": [
-                    {"type": 2, "style": 1, "label": t("btn_pack_perm", lang), "custom_id": f"sobre_banner:permanent:{user_id}"},
-                    {"type": 2, "style": 2, "label": t("btn_pack_rot", lang), "custom_id": f"sobre_banner:rotating:{user_id}"},
-                ],
-            }],
+            "components": [
+                {
+                    "type": 1,
+                    "components": [
+                        {"type": 2, "style": 1, "label": t("btn_pack_ol", lang), "custom_id": f"sobre_banner:ol:{user_id}"},
+                        {"type": 2, "style": 2, "label": t("btn_pack_gx", lang), "custom_id": f"sobre_banner:gx:{user_id}"},
+                        {"type": 2, "style": 2, "label": t("btn_pack_5ds", lang), "custom_id": f"sobre_banner:5ds:{user_id}"},
+                    ],
+                },
+                *self._x10_buttons(user_id, lang),
+            ],
         }
 
     async def open_sobre_banner(self, user_id: str, username: str, banner_key: str, lang: str = "en") -> dict:
@@ -406,14 +411,14 @@ class GameManager:
             return {"content": t("pack_already_used", lang, mins=mins, secs=secs), "components": []}
 
         existing_ids = {str(c["card_id"]) for c in self.db.get_collection(user_id)}
-        banner = ALL_BANNERS.get(banner_key, PERMANENT_BANNER)
+        banner = ALL_BANNERS.get(banner_key, DUEL_MONSTERS_BANNER)
         cards = pull_free(banner)
         self.db.add_to_collection(user_id, cards)
         self.db.set_last_sobre(user_id)
         new_ids = {str(c["card_id"]) for c in cards if str(c["card_id"]) not in existing_ids}
         return self._build_pull_response(cards, t("pack_opened", lang, banner=banner["name"]), user_id, banner_key, new_ids=new_ids, lang=lang)
 
-    async def open_sobre_x10(self, user_id: str, banner_key: str = "permanent", lang: str = "en") -> dict:
+    async def open_sobre_x10(self, user_id: str, banner_key: str = "ol", lang: str = "en") -> dict:
         user = self.db.get_user(user_id)
         if not user:
             return {"content": t("pack_x10_no_user", lang)}
@@ -426,7 +431,7 @@ class GameManager:
             return {"content": t("pack_x10_insufficient", lang)}
 
         existing_ids = {str(c["card_id"]) for c in self.db.get_collection(user_id)}
-        banner = ALL_BANNERS.get(banner_key, PERMANENT_BANNER)
+        banner = ALL_BANNERS.get(banner_key, DUEL_MONSTERS_BANNER)
         cards = pull_x10(banner)
         self.db.add_to_collection(user_id, cards)
         new_ids = {str(c["card_id"]) for c in cards if str(c["card_id"]) not in existing_ids}
@@ -437,7 +442,7 @@ class GameManager:
         result["embeds"][0]["footer"] = {"text": t("pack_coins_remaining", lang, coins=new_balance) + coins_note}
         return result
 
-    def _build_pull_response(self, cards: list[dict], header: str, user_id: str = "", banner_key: str = "permanent", new_ids: set = None, lang: str = "en") -> dict:
+    def _build_pull_response(self, cards: list[dict], header: str, user_id: str = "", banner_key: str = "ol", new_ids: set = None, lang: str = "en") -> dict:
         rarity_order = ["secret", "ultra", "super", "rare", "common"]
         rarity_names = {"secret": "Secret Rare", "ultra": "Ultra Rare", "super": "Super Rare", "rare": "Rare", "common": "Common"}
         cards_sorted = sorted(cards, key=lambda x: rarity_order.index(x["rarity"]))
@@ -582,9 +587,9 @@ class GameManager:
             return t("gacha_missing", lang, missing=missing, total=total)
 
         embeds = []
-        for label_key, banner in [("gacha_banner_rotating", ROTATING_BANNER), ("gacha_banner_permanent", PERMANENT_BANNER)]:
+        for banner_key, banner in ALL_BANNERS.items():
             embed = {
-                "title": f"<:ygobackicon:1506144706218950718> {t(label_key, lang)}: {banner['name']}",
+                "title": f"<:ygobackicon:1506144706218950718> {banner['name']}",
                 "description": t("gacha_probs", lang,
                     secret=RARITY_EMOJIS["secret"], ultra=RARITY_EMOJIS["ultra"],
                     super=RARITY_EMOJIS["super"], rare=RARITY_EMOJIS["rare"],
@@ -603,14 +608,15 @@ class GameManager:
             "components": [{
                 "type": 1,
                 "components": [
-                    {"type": 2, "style": 2, "label": t("btn_missing_rot", lang), "custom_id": "faltan:rotating"},
-                    {"type": 2, "style": 2, "label": t("btn_missing_perm", lang), "custom_id": "faltan:permanent"},
+                    {"type": 2, "style": 2, "label": t("btn_missing_ol", lang), "custom_id": "faltan:ol"},
+                    {"type": 2, "style": 2, "label": t("btn_missing_gx", lang), "custom_id": "faltan:gx"},
+                    {"type": 2, "style": 2, "label": t("btn_missing_5ds", lang), "custom_id": "faltan:5ds"},
                 ],
             }],
         }
 
     async def get_missing_cards(self, user_id: str, banner_key: str, page: int = 0, lang: str = "en") -> dict:
-        banner = ALL_BANNERS.get(banner_key, PERMANENT_BANNER)
+        banner = ALL_BANNERS.get(banner_key, DUEL_MONSTERS_BANNER)
         owned_ids = {str(c["card_id"]) for c in self.db.get_collection(user_id)}
 
         rarity_order = ["secret", "ultra", "super", "rare", "common"]
@@ -661,7 +667,7 @@ class GameManager:
         if not cards:
             return {"content": t("collection_empty", lang)}
 
-        banner_abbrevs = {"permanent": "OL", "rotating": "NG"}
+        banner_abbrevs = {"ol": "OL", "gx": "GX", "5ds": "SR"}
         card_banner: dict[str, str] = {}
         for banner_key, banner in ALL_BANNERS.items():
             abbrev = banner_abbrevs[banner_key]

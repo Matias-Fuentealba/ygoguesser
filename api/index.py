@@ -183,7 +183,7 @@ async def process_component(payload: dict, token: str):
         elif custom_id.startswith("gacha_x10:"):
             parts = custom_id.split(":")
             owner_id = parts[1]
-            banner_key = parts[2] if len(parts) > 2 else "permanent"
+            banner_key = parts[2] if len(parts) > 2 else "ol"
             if user_id != owner_id:
                 response = {"content": "❌ Only the user who opened the pack can use this button."}
             else:
@@ -396,7 +396,13 @@ async def privacy():
 
 @app.get("/banner", response_class=HTMLResponse)
 async def banner():
-    from game.gacha import PERMANENT_BANNER, ROTATING_BANNER
+    from game.gacha import DUEL_MONSTERS_BANNER, GX_BANNER, FIVE_DS_BANNER
+
+    ALL_BANNERS_WEB = [
+        (DUEL_MONSTERS_BANNER, "Permanent banner"),
+        (GX_BANNER, "Permanent banner"),
+        (FIVE_DS_BANNER, "Current rotating banner"),
+    ]
 
     rarity_labels = {"secret": "Secret Rare", "ultra": "Ultra Rare", "super": "Super Rare", "rare": "Rare", "common": "Common"}
     rarity_colors = {"secret": "#FFD700", "ultra": "#FFA500", "super": "#C0C0C0", "rare": "#0070DD", "common": "#9D9D9D"}
@@ -435,18 +441,20 @@ async def banner():
             </div>"""
         return f"{img_html}{sections}"
 
-    perm_html = build_banner_html(PERMANENT_BANNER)
-    rot_html = build_banner_html(ROTATING_BANNER)
+    ygo_icon = '<img src="https://cdn.discordapp.com/emojis/1506144706218950718.png" style="width:40px;height:40px;vertical-align:middle;margin-right:10px">'
+    body_parts = []
+    for i, (banner, label) in enumerate(ALL_BANNERS_WEB):
+        if i > 0:
+            body_parts.append('<hr style="border-color:#333;margin:48px 0">')
+        body_parts.append(f'<h1 style="color:#FFD700">{ygo_icon}{banner["name"]} <span style="font-size:16px;color:#aaa">— {label}</span></h1>')
+        body_parts.append(build_banner_html(banner))
+    banners_html = "\n".join(body_parts)
 
     return f"""
     <html>
     <head><title>YGOGuesser — Banners</title><meta charset="utf-8"></head>
     <body style="font-family:sans-serif;background:#1a1a2e;color:#eee;max-width:1000px;margin:40px auto;padding:0 20px">
-      <h1 style="color:#FFD700"><img src="https://cdn.discordapp.com/emojis/1506144706218950718.png" style="width:40px;height:40px;vertical-align:middle;margin-right:10px">{PERMANENT_BANNER['name']} <span style="font-size:16px;color:#aaa">— Permanent banner</span></h1>
-      {perm_html}
-      <hr style="border-color:#333;margin:48px 0">
-      <h1 style="color:#FFD700"><img src="https://cdn.discordapp.com/emojis/1506144706218950718.png" style="width:40px;height:40px;vertical-align:middle;margin-right:10px">{ROTATING_BANNER['name']} <span style="font-size:16px;color:#aaa">— Current rotating banner</span></h1>
-      {rot_html}
+      {banners_html}
     </body>
     </html>
     """
