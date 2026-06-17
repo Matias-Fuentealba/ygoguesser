@@ -351,7 +351,7 @@ ZEXAL_BANNER = {
         {"id": 9354555,  "name": "Photon Veil"},
         {"id": 38973775, "name": "Photon Lizard"},
         {"id": 95637655, "name": "Backup Warrior"},
-        {"id": 50213848, "name": "Monster Reborn Reborn"},
+        {"id": 65676461, "name": "Number 32: Shark Drake"},
         {"id": 22346472, "name": "Blustering Winds"},
         {"id": 72355441, "name": "Xyz Gift"},
         {"id": 32919136, "name": "Falling Down"},
