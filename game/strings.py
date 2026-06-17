@@ -97,10 +97,10 @@ STRINGS = {
         "pack_coins_remaining": "🪙 Coins remaining: {coins}",
         "btn_pack_ol": "✨ Original Legends",
         "btn_pack_gx": "🆕 Next Generation",
-        "btn_pack_5ds": "⚡ Synchro Rising",
+        "btn_pack_zexal": "🔢 Numbers Awakening",
         "btn_x10_ol": "x10 Original Legends ({cost})",
         "btn_x10_gx": "x10 Next Generation ({cost})",
-        "btn_x10_5ds": "x10 Synchro Rising ({cost})",
+        "btn_x10_zexal": "x10 Numbers Awakening ({cost})",
 
         # collection
         "collection_empty": "You don't have any cards yet. Use `/pack` to open your first pack.",
@@ -156,7 +156,7 @@ STRINGS = {
         "gacha_banner_permanent": "♾️ Permanent banner",
         "btn_missing_ol": "📋 Missing Original Legends",
         "btn_missing_gx": "📋 Missing Next Generation",
-        "btn_missing_5ds": "📋 Missing Synchro Rising",
+        "btn_missing_zexal": "📋 Missing Numbers Awakening",
 
         # missing cards
         "missing_complete": "✅ You have all cards from **{banner}**!",
@@ -358,10 +358,10 @@ STRINGS = {
         "pack_coins_remaining": "🪙 Monedas restantes: {coins}",
         "btn_pack_ol": "✨ Original Legends",
         "btn_pack_gx": "🆕 Next Generation",
-        "btn_pack_5ds": "⚡ Synchro Rising",
+        "btn_pack_zexal": "🔢 Numbers Awakening",
         "btn_x10_ol": "x10 Original Legends ({cost})",
         "btn_x10_gx": "x10 Next Generation ({cost})",
-        "btn_x10_5ds": "x10 Synchro Rising ({cost})",
+        "btn_x10_zexal": "x10 Numbers Awakening ({cost})",
 
         # collection
         "collection_empty": "No tienes cartas aún. Usa `/sobre` para abrir tu primer sobre.",
@@ -417,7 +417,7 @@ STRINGS = {
         "gacha_banner_permanent": "♾️ Banner permanente",
         "btn_missing_ol": "📋 Faltantes Original Legends",
         "btn_missing_gx": "📋 Faltantes Next Generation",
-        "btn_missing_5ds": "📋 Faltantes Synchro Rising",
+        "btn_missing_zexal": "📋 Faltantes Numbers Awakening",
 
         # missing cards
         "missing_complete": "✅ ¡Tienes todas las cartas del banner **{banner}**!",

@@ -6,12 +6,12 @@ from game.yugioh import fetch_random_card, build_hints, fetch_card_for_price
 from game.zoom import get_zoomed_image, zoom_score, MAX_ZOOM_LEVEL
 from game.gacha import (
     pull_free, pull_x10,
-    DUEL_MONSTERS_BANNER, GX_BANNER, FIVE_DS_BANNER, X10_COST,
+    DUEL_MONSTERS_BANNER, GX_BANNER, ZEXAL_BANNER, X10_COST,
     RARITY_EMOJIS, RARITY_COLORS, COOLDOWN_HOURS,
 )
 from game.strings import t
 
-ALL_BANNERS = {"ol": DUEL_MONSTERS_BANNER, "gx": GX_BANNER, "5ds": FIVE_DS_BANNER}
+ALL_BANNERS = {"ol": DUEL_MONSTERS_BANNER, "gx": GX_BANNER, "zexal": ZEXAL_BANNER}
 
 RARITY_SELL_VALUES = {"secret": 50, "ultra": 20, "super": 10, "rare": 5, "common": 1}
 
@@ -356,7 +356,7 @@ class GameManager:
             "components": [
                 {"type": 2, "style": 1, "label": t("btn_x10_ol", lang, cost=X10_COST), "emoji": coin_emoji, "custom_id": f"gacha_x10:{user_id}:ol"},
                 {"type": 2, "style": 2, "label": t("btn_x10_gx", lang, cost=X10_COST), "emoji": coin_emoji, "custom_id": f"gacha_x10:{user_id}:gx"},
-                {"type": 2, "style": 2, "label": t("btn_x10_5ds", lang, cost=X10_COST), "emoji": coin_emoji, "custom_id": f"gacha_x10:{user_id}:5ds"},
+                {"type": 2, "style": 2, "label": t("btn_x10_zexal", lang, cost=X10_COST), "emoji": coin_emoji, "custom_id": f"gacha_x10:{user_id}:zexal"},
             ],
         }]
 
@@ -397,7 +397,7 @@ class GameManager:
                     "components": [
                         {"type": 2, "style": 1, "label": t("btn_pack_ol", lang), "custom_id": f"sobre_banner:ol:{user_id}"},
                         {"type": 2, "style": 2, "label": t("btn_pack_gx", lang), "custom_id": f"sobre_banner:gx:{user_id}"},
-                        {"type": 2, "style": 2, "label": t("btn_pack_5ds", lang), "custom_id": f"sobre_banner:5ds:{user_id}"},
+                        {"type": 2, "style": 2, "label": t("btn_pack_zexal", lang), "custom_id": f"sobre_banner:zexal:{user_id}"},
                     ],
                 },
                 *self._x10_buttons(user_id, lang),
@@ -610,7 +610,7 @@ class GameManager:
                 "components": [
                     {"type": 2, "style": 2, "label": t("btn_missing_ol", lang), "custom_id": "faltan:ol"},
                     {"type": 2, "style": 2, "label": t("btn_missing_gx", lang), "custom_id": "faltan:gx"},
-                    {"type": 2, "style": 2, "label": t("btn_missing_5ds", lang), "custom_id": "faltan:5ds"},
+                    {"type": 2, "style": 2, "label": t("btn_missing_zexal", lang), "custom_id": "faltan:zexal"},
                 ],
             }],
         }
