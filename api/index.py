@@ -504,6 +504,7 @@ async def _handle_vote(user_id: str):
 async def topgg_webhook(request: Request, background_tasks: BackgroundTasks):
     auth = request.headers.get("Authorization", "")
     secret = os.environ.get("TOPGG_WEBHOOK_SECRET", "")
+    print(f"[topgg] auth='{auth}' secret='{secret}' match={auth == secret}")
     if auth != secret:
         raise HTTPException(status_code=401, detail="Unauthorized")
     body = await request.json()
