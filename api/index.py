@@ -396,12 +396,12 @@ async def privacy():
 
 @app.get("/banner", response_class=HTMLResponse)
 async def banner():
-    from game.gacha import DUEL_MONSTERS_BANNER, GX_BANNER, ZEXAL_BANNER
+    from game.gacha import DUEL_MONSTERS_BANNER, GX_BANNER, ARC_V_BANNER
 
     ALL_BANNERS_WEB = [
         (DUEL_MONSTERS_BANNER, "Permanent banner"),
         (GX_BANNER, "Permanent banner"),
-        (ZEXAL_BANNER, "Current rotating banner"),
+        (ARC_V_BANNER, "Current rotating banner"),
     ]
 
     rarity_labels = {"secret": "Secret Rare", "ultra": "Ultra Rare", "super": "Super Rare", "rare": "Rare", "common": "Common"}
