@@ -41,6 +41,13 @@ class Database:
             "coins_balance": (user.get("coins_balance") or 0) + coins_earned,
         }).eq("discord_id", discord_id).execute()
 
+    def add_vote_coins(self, discord_id: str, amount: int):
+        user = self.get_user(discord_id)
+        if user:
+            self.client.table("users").update({
+                "coins_balance": (user.get("coins_balance") or 0) + amount
+            }).eq("discord_id", discord_id).execute()
+
     def get_ranking(self, limit: int = 10) -> list:
         result = (
             self.client.table("users")
@@ -216,6 +223,19 @@ class Database:
             .execute()
         )
         return result.data
+
+    def unprotect_all(self, discord_id: str) -> int:
+        result = (
+            self.client.table("collection")
+            .select("card_id")
+            .eq("discord_id", discord_id)
+            .eq("protected", True)
+            .execute()
+        )
+        count = len(result.data)
+        if count:
+            self.client.table("collection").update({"protected": False}).eq("discord_id", discord_id).execute()
+        return count
 
     def toggle_protect_card(self, discord_id: str, card_name: str) -> dict | None:
         result = (

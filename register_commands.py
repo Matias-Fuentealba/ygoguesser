@@ -143,6 +143,11 @@ COMMANDS = [
         ],
     },
     {
+        "name": "vote",
+        "description": "Vote for YGOGuesser on top.gg and earn 200 coins.",
+        "description_localizations": {code: "Vota por YGOGuesser en top.gg y gana 200 monedas." for code in ES},
+    },
+    {
         "name": "config",
         "description": "Configure channel restrictions for commands (admins only).",
         "description_localizations": {code: "Configura restricciones de canal para los comandos (solo admins)." for code in ES},

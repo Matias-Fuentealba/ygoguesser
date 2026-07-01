@@ -131,6 +131,8 @@ async def process_command(payload: dict, token: str):
             from_card_name = opts.get("my_card", "")
             to_card_name = opts.get("their_card", "")
             response = await gm.initiate_trade(user_id, to_user_id, from_card_name, to_card_name, lang)
+        elif command == "vote":
+            response = await gm.get_vote_info(user_id, lang)
         elif command == "help":
             response = await gm.get_help(lang)
         elif command == "config":
@@ -227,6 +229,18 @@ async def process_component(payload: dict, token: str):
                 response = {"content": _t("trade_wrong_user_reject", lang)}
             else:
                 response = await gm.reject_trade(trade_id, user_id, lang)
+        elif custom_id.startswith("unprotect_all_confirm:"):
+            owner_id = custom_id.split(":")[1]
+            if user_id != owner_id:
+                response = {"content": "❌ Only you can confirm this action.", "components": []}
+            else:
+                response = await gm.confirm_unprotect_all(user_id, lang)
+        elif custom_id.startswith("unprotect_all_cancel:"):
+            owner_id = custom_id.split(":")[1]
+            if user_id != owner_id:
+                response = {"content": "❌ Only you can cancel this action.", "components": []}
+            else:
+                response = {"content": _t("unprotect_all_cancelled", lang), "embeds": [], "components": []}
         elif custom_id == "faltan_noop" or custom_id == "coleccion_noop":
             return
         else:
@@ -460,6 +474,46 @@ async def banner():
     """
 
 
+async def _send_vote_dm(user_id: str, lang: str = "en"):
+    from game.strings import t as _t2
+    bot_token = os.environ.get("DISCORD_TOKEN", "")
+    msg = _t2("vote_dm", lang)
+    async with httpx.AsyncClient() as client:
+        dm = await client.post(
+            "https://discord.com/api/v10/users/@me/channels",
+            headers={"Authorization": f"Bot {bot_token}"},
+            json={"recipient_id": user_id},
+        )
+        if dm.status_code == 200:
+            channel_id = dm.json()["id"]
+            await client.post(
+                f"https://discord.com/api/v10/channels/{channel_id}/messages",
+                headers={"Authorization": f"Bot {bot_token}"},
+                json={"content": msg},
+            )
+
+
+async def _handle_vote(user_id: str):
+    db = Database()
+    db.upsert_user(user_id, "voter")
+    db.add_vote_coins(user_id, 200)
+    await _send_vote_dm(user_id)
+
+
+@app.post("/topgg-webhook")
+async def topgg_webhook(request: Request, background_tasks: BackgroundTasks):
+    auth = request.headers.get("Authorization", "")
+    secret = os.environ.get("TOPGG_WEBHOOK_SECRET", "")
+    if auth != secret:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    body = await request.json()
+    user_id = body.get("user", "")
+    vote_type = body.get("type", "")
+    if vote_type == "upvote" and user_id:
+        background_tasks.add_task(_handle_vote, user_id)
+    return JSONResponse({"ok": True})
+
+
 @app.post("/")
 async def interactions(request: Request, background_tasks: BackgroundTasks):
     signature = request.headers.get("X-Signature-Ed25519", "")
@@ -492,7 +546,9 @@ async def interactions(request: Request, background_tasks: BackgroundTasks):
             custom_id.startswith("sobre_banner:") or
             custom_id.startswith("faltan_page:") or
             custom_id.startswith("trade_accept:") or
-            custom_id.startswith("trade_reject:")
+            custom_id.startswith("trade_reject:") or
+            custom_id.startswith("unprotect_all_confirm:") or
+            custom_id.startswith("unprotect_all_cancel:")
         )
         response_type = 6 if updates_in_place else 5
         return JSONResponse({"type": response_type})

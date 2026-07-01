@@ -97,10 +97,10 @@ STRINGS = {
         "pack_coins_remaining": "🪙 Coins remaining: {coins}",
         "btn_pack_ol": "✨ Original Legends",
         "btn_pack_gx": "🆕 Next Generation",
-        "btn_pack_zexal": "🔢 Numbers Awakening",
+        "btn_pack_arcv": "🎭 Pendulum Strike",
         "btn_x10_ol": "x10 Original Legends ({cost})",
         "btn_x10_gx": "x10 Next Generation ({cost})",
-        "btn_x10_zexal": "x10 Numbers Awakening ({cost})",
+        "btn_x10_arcv": "x10 Pendulum Strike ({cost})",
 
         # collection
         "collection_empty": "You don't have any cards yet. Use `/pack` to open your first pack.",
@@ -122,6 +122,12 @@ STRINGS = {
         "protect_not_found": "❌ You don't have any card matching **{name}** in your collection.",
         "protect_on": "🔒 **{name}** is now protected.",
         "protect_off": "🔓 **{name}** is now unprotected.",
+        "unprotect_all_none": "🔓 You have no protected cards.",
+        "unprotect_all_confirm": "🔒 You have **{count}** protected card(s). Are you sure you want to unprotect all of them?",
+        "unprotect_all_done": "🔓 **{count}** card(s) have been unprotected.",
+        "unprotect_all_cancelled": "Cancelled.",
+        "btn_unprotect_all_confirm": "🔓 Unprotect all",
+        "btn_unprotect_all_cancel": "Cancel",
 
         # ranking
         "ranking_empty_score": "No games registered yet.",
@@ -156,7 +162,7 @@ STRINGS = {
         "gacha_banner_permanent": "♾️ Permanent banner",
         "btn_missing_ol": "📋 Missing Original Legends",
         "btn_missing_gx": "📋 Missing Next Generation",
-        "btn_missing_zexal": "📋 Missing Numbers Awakening",
+        "btn_missing_arcv": "📋 Missing Pendulum Strike",
 
         # missing cards
         "missing_complete": "✅ You have all cards from **{banner}**!",
@@ -180,6 +186,17 @@ STRINGS = {
         "trade_rejected": "❌ <@{user}> rejected the trade.",
         "btn_trade_accept": "✅ Accept",
         "btn_trade_reject": "❌ Reject",
+
+        # vote
+        "vote_title": "🗳️ Vote for YGOGuesser",
+        "vote_description": (
+            "Support the bot on **top.gg** and earn **200 coins** <:coinicon:1506149435179143248>!\n\n"
+            "🔗 [Click here to vote](https://top.gg/bot/1313541894407716987/vote)\n\n"
+            "Votes reset every **12 hours** — come back twice a day for double the coins!"
+        ),
+        "vote_already": "✅ You've already voted! Come back in a few hours.",
+        "vote_not_yet": "⏳ You haven't voted yet today — every vote helps!",
+        "vote_dm": "🗳️ Thanks for voting for YGOGuesser on top.gg! You received **200 coins** <:coinicon:1506149435179143248>. Keep it up!",
 
         # config
         "config_no_locks": "No commands are locked to any channel.",
@@ -358,10 +375,10 @@ STRINGS = {
         "pack_coins_remaining": "🪙 Monedas restantes: {coins}",
         "btn_pack_ol": "✨ Original Legends",
         "btn_pack_gx": "🆕 Next Generation",
-        "btn_pack_zexal": "🔢 Numbers Awakening",
+        "btn_pack_arcv": "🎭 Pendulum Strike",
         "btn_x10_ol": "x10 Original Legends ({cost})",
         "btn_x10_gx": "x10 Next Generation ({cost})",
-        "btn_x10_zexal": "x10 Numbers Awakening ({cost})",
+        "btn_x10_arcv": "x10 Pendulum Strike ({cost})",
 
         # collection
         "collection_empty": "No tienes cartas aún. Usa `/sobre` para abrir tu primer sobre.",
@@ -383,6 +400,12 @@ STRINGS = {
         "protect_not_found": "❌ No tienes ninguna carta que coincida con **{name}** en tu colección.",
         "protect_on": "🔒 **{name}** ahora está protegida.",
         "protect_off": "🔓 **{name}** ahora está desprotegida.",
+        "unprotect_all_none": "🔓 No tienes cartas protegidas.",
+        "unprotect_all_confirm": "🔒 Tienes **{count}** carta(s) protegida(s). ¿Estás seguro de que quieres desprotegerlas todas?",
+        "unprotect_all_done": "🔓 **{count}** carta(s) desprotegidas.",
+        "unprotect_all_cancelled": "Cancelado.",
+        "btn_unprotect_all_confirm": "🔓 Desproteger todo",
+        "btn_unprotect_all_cancel": "Cancelar",
 
         # ranking
         "ranking_empty_score": "Todavía no hay partidas registradas.",
@@ -417,7 +440,7 @@ STRINGS = {
         "gacha_banner_permanent": "♾️ Banner permanente",
         "btn_missing_ol": "📋 Faltantes Original Legends",
         "btn_missing_gx": "📋 Faltantes Next Generation",
-        "btn_missing_zexal": "📋 Faltantes Numbers Awakening",
+        "btn_missing_arcv": "📋 Faltantes Pendulum Strike",
 
         # missing cards
         "missing_complete": "✅ ¡Tienes todas las cartas del banner **{banner}**!",
@@ -441,6 +464,17 @@ STRINGS = {
         "trade_rejected": "❌ <@{user}> rechazó el intercambio.",
         "btn_trade_accept": "✅ Aceptar",
         "btn_trade_reject": "❌ Rechazar",
+
+        # vote
+        "vote_title": "🗳️ Vota por YGOGuesser",
+        "vote_description": (
+            "Apoya el bot en **top.gg** y gana **200 monedas** <:coinicon:1506149435179143248>!\n\n"
+            "🔗 [Haz clic aquí para votar](https://top.gg/bot/1313541894407716987/vote)\n\n"
+            "Los votos se resetean cada **12 horas** — ¡vuelve dos veces al día para el doble de monedas!"
+        ),
+        "vote_already": "✅ ¡Ya votaste! Vuelve en unas horas.",
+        "vote_not_yet": "⏳ Aún no has votado hoy — ¡cada voto ayuda!",
+        "vote_dm": "🗳️ ¡Gracias por votar por YGOGuesser en top.gg! Recibiste **200 monedas** <:coinicon:1506149435179143248>. ¡Sigue así!",
 
         # config
         "config_no_locks": "No hay comandos bloqueados a ningún canal.",

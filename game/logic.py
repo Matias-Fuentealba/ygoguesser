@@ -6,12 +6,12 @@ from game.yugioh import fetch_random_card, build_hints, fetch_card_for_price
 from game.zoom import get_zoomed_image, zoom_score, MAX_ZOOM_LEVEL
 from game.gacha import (
     pull_free, pull_x10,
-    DUEL_MONSTERS_BANNER, GX_BANNER, ZEXAL_BANNER, X10_COST,
+    DUEL_MONSTERS_BANNER, GX_BANNER, ARC_V_BANNER, X10_COST,
     RARITY_EMOJIS, RARITY_COLORS, COOLDOWN_HOURS,
 )
 from game.strings import t
 
-ALL_BANNERS = {"ol": DUEL_MONSTERS_BANNER, "gx": GX_BANNER, "zexal": ZEXAL_BANNER}
+ALL_BANNERS = {"ol": DUEL_MONSTERS_BANNER, "gx": GX_BANNER, "arcv": ARC_V_BANNER}
 
 RARITY_SELL_VALUES = {"secret": 50, "ultra": 20, "super": 10, "rare": 5, "common": 1}
 
@@ -356,7 +356,7 @@ class GameManager:
             "components": [
                 {"type": 2, "style": 1, "label": t("btn_x10_ol", lang, cost=X10_COST), "emoji": coin_emoji, "custom_id": f"gacha_x10:{user_id}:ol"},
                 {"type": 2, "style": 2, "label": t("btn_x10_gx", lang, cost=X10_COST), "emoji": coin_emoji, "custom_id": f"gacha_x10:{user_id}:gx"},
-                {"type": 2, "style": 2, "label": t("btn_x10_zexal", lang, cost=X10_COST), "emoji": coin_emoji, "custom_id": f"gacha_x10:{user_id}:zexal"},
+                {"type": 2, "style": 2, "label": t("btn_x10_arcv", lang, cost=X10_COST), "emoji": coin_emoji, "custom_id": f"gacha_x10:{user_id}:arcv"},
             ],
         }]
 
@@ -397,7 +397,7 @@ class GameManager:
                     "components": [
                         {"type": 2, "style": 1, "label": t("btn_pack_ol", lang), "custom_id": f"sobre_banner:ol:{user_id}"},
                         {"type": 2, "style": 2, "label": t("btn_pack_gx", lang), "custom_id": f"sobre_banner:gx:{user_id}"},
-                        {"type": 2, "style": 2, "label": t("btn_pack_zexal", lang), "custom_id": f"sobre_banner:zexal:{user_id}"},
+                        {"type": 2, "style": 2, "label": t("btn_pack_arcv", lang), "custom_id": f"sobre_banner:arcv:{user_id}"},
                     ],
                 },
                 *self._x10_buttons(user_id, lang),
@@ -476,11 +476,33 @@ class GameManager:
         }
 
     async def toggle_protect_card(self, user_id: str, card_name: str, lang: str = "en") -> dict:
+        if card_name.strip().lower() == "all":
+            return await self.show_unprotect_all_confirm(user_id, lang)
         result = self.db.toggle_protect_card(user_id, card_name)
         if not result:
             return {"content": t("protect_not_found", lang, name=card_name)}
         key = "protect_on" if result["protected"] else "protect_off"
         return {"content": t(key, lang, name=result["card_name"])}
+
+    async def show_unprotect_all_confirm(self, user_id: str, lang: str = "en") -> dict:
+        cards = self.db.get_collection(user_id)
+        count = sum(1 for c in cards if c.get("protected"))
+        if count == 0:
+            return {"content": t("unprotect_all_none", lang)}
+        return {
+            "embeds": [{"description": t("unprotect_all_confirm", lang, count=count), "color": 0xE67E22}],
+            "components": [{
+                "type": 1,
+                "components": [
+                    {"type": 2, "style": 4, "label": t("btn_unprotect_all_confirm", lang), "custom_id": f"unprotect_all_confirm:{user_id}"},
+                    {"type": 2, "style": 2, "label": t("btn_unprotect_all_cancel", lang), "custom_id": f"unprotect_all_cancel:{user_id}"},
+                ],
+            }],
+        }
+
+    async def confirm_unprotect_all(self, user_id: str, lang: str = "en") -> dict:
+        count = self.db.unprotect_all(user_id)
+        return {"content": t("unprotect_all_done", lang, count=count), "embeds": [], "components": []}
 
     async def show_sell_duplicates(self, user_id: str, lang: str = "en") -> dict:
         cards = self.db.get_collection(user_id)
@@ -610,7 +632,7 @@ class GameManager:
                 "components": [
                     {"type": 2, "style": 2, "label": t("btn_missing_ol", lang), "custom_id": "faltan:ol"},
                     {"type": 2, "style": 2, "label": t("btn_missing_gx", lang), "custom_id": "faltan:gx"},
-                    {"type": 2, "style": 2, "label": t("btn_missing_zexal", lang), "custom_id": "faltan:zexal"},
+                    {"type": 2, "style": 2, "label": t("btn_missing_arcv", lang), "custom_id": "faltan:arcv"},
                 ],
             }],
         }
@@ -830,6 +852,33 @@ class GameManager:
 
         self.db.cancel_trade(trade_id)
         return {"content": t("trade_rejected", lang, user=user_id), "embeds": [], "components": []}
+
+    async def get_vote_info(self, user_id: str, lang: str = "en") -> dict:
+        import os
+        import httpx
+        bot_id = "1313541894407716987"
+        token = os.environ.get("TOPGG_TOKEN", "")
+        has_voted = False
+        try:
+            async with httpx.AsyncClient() as client:
+                resp = await client.get(
+                    f"https://top.gg/api/bots/{bot_id}/check?userId={user_id}",
+                    headers={"Authorization": token},
+                    timeout=5,
+                )
+                if resp.status_code == 200:
+                    has_voted = resp.json().get("voted") == 1
+        except Exception:
+            pass
+
+        status = t("vote_already", lang) if has_voted else t("vote_not_yet", lang)
+        return {
+            "embeds": [{
+                "title": t("vote_title", lang),
+                "description": f"{t('vote_description', lang)}\n\n{status}",
+                "color": 0x2ECC71 if has_voted else 0xFF3366,
+            }]
+        }
 
     async def handle_config(self, guild_id: str, accion: str, command: str | None, channel_id: str | None, language: str | None, lang: str = "en") -> dict:
         if language:
