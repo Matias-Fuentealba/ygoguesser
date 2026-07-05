@@ -15,7 +15,7 @@ class Database:
     def __init__(self):
         self.client = get_client()
 
-    # ---------- users ----------
+    # ---------- usuarios ----------
 
     def upsert_user(self, discord_id: str, username: str):
         self.client.table("users").upsert(
@@ -84,7 +84,7 @@ class Database:
         ]
         return sorted(ranking, key=lambda x: x["unique_count"], reverse=True)[:limit]
 
-    # ---------- games ----------
+    # ---------- partidas ----------
 
     def get_active_game(self, discord_id: str) -> dict | None:
         result = (
@@ -273,7 +273,7 @@ class Database:
             self.client.table("collection").update({"count": count - 1}).eq("discord_id", discord_id).eq("card_id", card_id).execute()
         return True
 
-    # ---------- trades ----------
+    # ---------- intercambios ----------
 
     def create_trade(self, from_user_id: str, from_card: dict, to_user_id: str, to_card: dict) -> dict:
         result = (
@@ -317,7 +317,7 @@ class Database:
     def cancel_trade(self, trade_id: str):
         self.client.table("trades").update({"status": "rejected"}).eq("id", trade_id).execute()
 
-    # ---------- channel locks ----------
+    # ---------- restricciones de canal ----------
 
     def get_command_channel(self, guild_id: str, command: str) -> str | None:
         result = (
@@ -347,7 +347,7 @@ class Database:
     def remove_command_channel(self, guild_id: str, command: str):
         self.client.table("channel_locks").delete().eq("guild_id", guild_id).eq("command", command).execute()
 
-    # ---------- guild settings ----------
+    # ---------- configuración del servidor ----------
 
     def get_guild_language(self, guild_id: str) -> str:
         result = self.client.table("guild_settings").select("language").eq("guild_id", guild_id).execute()

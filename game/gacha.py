@@ -484,8 +484,6 @@ ARC_V_BANNER = {
     ],
 }
 
-PERMANENT_BANNER = DUEL_MONSTERS_BANNER
-ROTATING_BANNER = FIVE_DS_BANNER
 
 
 def _image_url(card_id: int) -> str:

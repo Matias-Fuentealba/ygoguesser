@@ -2,7 +2,7 @@ import io
 import requests
 from PIL import Image
 
-# Each level defines what fraction of the card is visible (crop size relative to full card)
+# Cada nivel define qué fracción de la carta es visible (0.15 = 15% del área)
 ZOOM_LEVELS = [0.15, 0.30, 0.55]
 OUTPUT_SIZE = (400, 400)
 
@@ -27,7 +27,6 @@ def get_zoomed_image(image_url: str, zoom_level: int) -> io.BytesIO | None:
     crop_w = int(w * fraction)
     crop_h = int(h * fraction)
 
-    # Crop from the center of the card
     left = (w - crop_w) // 2
     top = (h - crop_h) // 2
     cropped = img.crop((left, top, left + crop_w, top + crop_h))

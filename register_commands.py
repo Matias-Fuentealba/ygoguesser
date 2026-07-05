@@ -1,5 +1,5 @@
 """
-Run once to register slash commands with Discord:
+Ejecutar una vez para registrar los slash commands en Discord:
   python register_commands.py
 """
 import os
@@ -11,7 +11,7 @@ load_dotenv()
 APPLICATION_ID = os.environ["DISCORD_APPLICATION_ID"]
 BOT_TOKEN = os.environ["DISCORD_TOKEN"]
 
-GUILD_ID = "916429226171826236"
+GUILD_ID = os.environ["DISCORD_GUILD_ID"]
 
 ES = ["es-ES", "es-419"]
 

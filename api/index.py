@@ -36,7 +36,7 @@ async def send_followup(token: str, response: str | dict):
     url = f"https://discord.com/api/v10/webhooks/{APPLICATION_ID}/{token}/messages/@original"
 
     async with httpx.AsyncClient() as client:
-        # Response with image file (zoom mode)
+        # Respuesta con imagen (modo zoom)
         if isinstance(response, dict) and response.get("image"):
             img: io.BytesIO = response["image"]
             payload = {"content": response.get("content", "")}
@@ -46,7 +46,7 @@ async def send_followup(token: str, response: str | dict):
                 files={"files[0]": ("card.png", img, "image/png")},
             )
 
-        # Response with embed (win/lose showing card)
+        # Respuesta con embed (victoria/derrota mostrando la carta)
         elif isinstance(response, dict) and response.get("embed_image_url"):
             embed = {
                 "description": response.get("content", ""),
@@ -55,13 +55,13 @@ async def send_followup(token: str, response: str | dict):
             }
             await client.patch(url, json={"embeds": [embed]})
 
-        # Response with embeds dict (hints mode win/lose)
+        # Respuesta con lista de embeds
         elif isinstance(response, dict) and response.get("embeds"):
             r = await client.patch(url, json=response)
             if r.status_code >= 400:
                 print(f"[Discord 400] payload={response}\nresponse={r.text}")
 
-        # Plain text or simple dict with content (and optional components)
+        # Texto plano o dict con content y componentes opcionales
         elif isinstance(response, dict):
             r = await client.patch(url, json=response)
             if r.status_code >= 400:
@@ -92,7 +92,7 @@ async def process_command(payload: dict, token: str):
     lang = db.get_guild_language(guild_id)
 
     try:
-        # Channel lock check
+        # Verificación de restricción de canal
         if command not in UNLOCKED_COMMANDS:
             allowed = db.get_command_channel(guild_id, command)
             if allowed and channel_id != allowed:
@@ -535,7 +535,7 @@ async def interactions(request: Request, background_tasks: BackgroundTasks):
     if payload["type"] == 3:
         custom_id = payload["data"]["custom_id"]
         background_tasks.add_task(process_component, payload, payload["token"])
-        # Buttons that update in-place vs create a new message
+        # Botones que actualizan el mensaje actual vs los que crean uno nuevo
         updates_in_place = (
             custom_id.startswith("price_") or
             custom_id.startswith("coleccion_") or

@@ -185,9 +185,7 @@ class GameManager:
     async def start_zoom(self, user_id: str, username: str, lang: str = "en") -> dict:
         existing = self.db.get_active_game(user_id)
         if existing:
-            mode = existing.get("game_mode", "hints")
-            cmd = "/guess" if mode != "zoom" else "/guess"
-            return {"content": t("zoom_already_active", lang, cmd=cmd)}
+            return {"content": t("zoom_already_active", lang, cmd="/guess")}
 
         card = fetch_random_card()
         if not card:
@@ -689,7 +687,7 @@ class GameManager:
         if not cards:
             return {"content": t("collection_empty", lang)}
 
-        banner_abbrevs = {"ol": "OL", "gx": "GX", "5ds": "SR"}
+        banner_abbrevs = {"ol": "OL", "gx": "GX", "arcv": "AV"}
         card_banner: dict[str, str] = {}
         for banner_key, banner in ALL_BANNERS.items():
             abbrev = banner_abbrevs[banner_key]
