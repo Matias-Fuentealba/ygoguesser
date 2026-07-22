@@ -96,11 +96,11 @@ STRINGS = {
         "pack_new_card_footer": "🆕 = new card in your collection",
         "pack_coins_remaining": "🪙 Coins remaining: {coins}",
         "btn_pack_ol": "✨ Original Legends",
-        "btn_pack_gx": "🆕 Next Generation",
-        "btn_pack_arcv": "🎭 Pendulum Strike",
+        "btn_pack_gx": "Next Generation",
+        "btn_pack_vrains": "🆕 Storm Access",
         "btn_x10_ol": "x10 Original Legends ({cost})",
         "btn_x10_gx": "x10 Next Generation ({cost})",
-        "btn_x10_arcv": "x10 Pendulum Strike ({cost})",
+        "btn_x10_vrains": "x10 Storm Access ({cost})",
 
         # collection
         "collection_empty": "You don't have any cards yet. Use `/pack` to open your first pack.",
@@ -162,7 +162,7 @@ STRINGS = {
         "gacha_banner_permanent": "♾️ Permanent banner",
         "btn_missing_ol": "📋 Missing Original Legends",
         "btn_missing_gx": "📋 Missing Next Generation",
-        "btn_missing_arcv": "📋 Missing Pendulum Strike",
+        "btn_missing_vrains": "📋 Missing Storm Access",
 
         # missing cards
         "missing_complete": "✅ You have all cards from **{banner}**!",
@@ -374,11 +374,11 @@ STRINGS = {
         "pack_new_card_footer": "🆕 = carta nueva en tu colección",
         "pack_coins_remaining": "🪙 Monedas restantes: {coins}",
         "btn_pack_ol": "✨ Original Legends",
-        "btn_pack_gx": "🆕 Next Generation",
-        "btn_pack_arcv": "🎭 Pendulum Strike",
+        "btn_pack_gx": "Next Generation",
+        "btn_pack_vrains": "🆕 Storm Access",
         "btn_x10_ol": "x10 Original Legends ({cost})",
         "btn_x10_gx": "x10 Next Generation ({cost})",
-        "btn_x10_arcv": "x10 Pendulum Strike ({cost})",
+        "btn_x10_vrains": "x10 Storm Access ({cost})",
 
         # collection
         "collection_empty": "No tienes cartas aún. Usa `/sobre` para abrir tu primer sobre.",
@@ -440,7 +440,8 @@ STRINGS = {
         "gacha_banner_permanent": "♾️ Banner permanente",
         "btn_missing_ol": "📋 Faltantes Original Legends",
         "btn_missing_gx": "📋 Faltantes Next Generation",
-        "btn_missing_arcv": "📋 Faltantes Pendulum Strike",
+        "btn_missing_vrains": "📋 Faltantes Storm Access",
+        "btn_missing_vrains": "📋 Faltantes Storm Access",
 
         # missing cards
         "missing_complete": "✅ ¡Tienes todas las cartas del banner **{banner}**!",

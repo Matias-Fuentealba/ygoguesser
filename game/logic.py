@@ -6,12 +6,12 @@ from game.yugioh import fetch_random_card, build_hints, fetch_card_for_price
 from game.zoom import get_zoomed_image, zoom_score, MAX_ZOOM_LEVEL
 from game.gacha import (
     pull_free, pull_x10,
-    DUEL_MONSTERS_BANNER, GX_BANNER, ARC_V_BANNER, X10_COST,
+    DUEL_MONSTERS_BANNER, GX_BANNER, VRAINS_BANNER, X10_COST,
     RARITY_EMOJIS, RARITY_COLORS, COOLDOWN_HOURS,
 )
 from game.strings import t
 
-ALL_BANNERS = {"ol": DUEL_MONSTERS_BANNER, "gx": GX_BANNER, "arcv": ARC_V_BANNER}
+ALL_BANNERS = {"ol": DUEL_MONSTERS_BANNER, "gx": GX_BANNER, "vrains": VRAINS_BANNER}
 
 RARITY_SELL_VALUES = {"secret": 50, "ultra": 20, "super": 10, "rare": 5, "common": 1}
 
@@ -354,7 +354,7 @@ class GameManager:
             "components": [
                 {"type": 2, "style": 1, "label": t("btn_x10_ol", lang, cost=X10_COST), "emoji": coin_emoji, "custom_id": f"gacha_x10:{user_id}:ol"},
                 {"type": 2, "style": 2, "label": t("btn_x10_gx", lang, cost=X10_COST), "emoji": coin_emoji, "custom_id": f"gacha_x10:{user_id}:gx"},
-                {"type": 2, "style": 2, "label": t("btn_x10_arcv", lang, cost=X10_COST), "emoji": coin_emoji, "custom_id": f"gacha_x10:{user_id}:arcv"},
+                {"type": 2, "style": 2, "label": t("btn_x10_vrains", lang, cost=X10_COST), "emoji": coin_emoji, "custom_id": f"gacha_x10:{user_id}:vrains"},
             ],
         }]
 
@@ -395,7 +395,7 @@ class GameManager:
                     "components": [
                         {"type": 2, "style": 1, "label": t("btn_pack_ol", lang), "custom_id": f"sobre_banner:ol:{user_id}"},
                         {"type": 2, "style": 2, "label": t("btn_pack_gx", lang), "custom_id": f"sobre_banner:gx:{user_id}"},
-                        {"type": 2, "style": 2, "label": t("btn_pack_arcv", lang), "custom_id": f"sobre_banner:arcv:{user_id}"},
+                        {"type": 2, "style": 2, "label": t("btn_pack_vrains", lang), "custom_id": f"sobre_banner:vrains:{user_id}"},
                     ],
                 },
                 *self._x10_buttons(user_id, lang),
@@ -630,7 +630,7 @@ class GameManager:
                 "components": [
                     {"type": 2, "style": 2, "label": t("btn_missing_ol", lang), "custom_id": "faltan:ol"},
                     {"type": 2, "style": 2, "label": t("btn_missing_gx", lang), "custom_id": "faltan:gx"},
-                    {"type": 2, "style": 2, "label": t("btn_missing_arcv", lang), "custom_id": "faltan:arcv"},
+                    {"type": 2, "style": 2, "label": t("btn_missing_vrains", lang), "custom_id": "faltan:vrains"},
                 ],
             }],
         }
@@ -687,7 +687,7 @@ class GameManager:
         if not cards:
             return {"content": t("collection_empty", lang)}
 
-        banner_abbrevs = {"ol": "OL", "gx": "GX", "arcv": "AV"}
+        banner_abbrevs = {"ol": "OL", "gx": "GX", "vrains": "VR"}
         card_banner: dict[str, str] = {}
         for banner_key, banner in ALL_BANNERS.items():
             abbrev = banner_abbrevs[banner_key]

@@ -488,7 +488,7 @@ ARC_V_BANNER = {
 
 VRAINS_BANNER = {
     "name": "Storm Access",
-    "image_url": "",
+    "image_url": "https://i.imgur.com/jWMokvM.jpeg",
     "secret": [
         {"id": 5043010,  "name": "Firewall Dragon"},
         {"id": 31833038, "name": "Borreload Dragon"},
